@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+02_test_input/
+03_reference/
+04_output/
+05_logs/
