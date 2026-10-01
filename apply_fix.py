@@ -1,22 +1,23 @@
 # -*- coding: utf-8 -*-
 """
-line_iso_desktop_tool V1.34 ~ V1.37 -> V1.38 패치 스크립트
+line_iso_desktop_tool V1.34 ~ V1.38 -> V1.39 패치 스크립트
 
 사용법 (지금 쓰는 line_iso_desktop_tool_V1.3x.py 와 같은 폴더에 이 파일을 두고):
     py apply_fix.py
 또는 경로 직접 지정:
-    py apply_fix.py "C:\\...\\line_iso_desktop_tool_V1.37.py"
+    py apply_fix.py "C:\\...\\line_iso_desktop_tool_V1.38.py"
 
 하는 일
-1) line_iso_desktop_tool_V1.38.py 생성 (원본 파일은 그대로 둔다)
+1) line_iso_desktop_tool_V1.39.py 생성 (원본 파일은 그대로 둔다)
    - V1.35: get_extracted_dir() / get_reports_dir() 가 저장된 폴더를 만들 수 없으면
      (다른 PC의 D: 드라이브 등) 기본 폴더(output/extracted, output/reports)로 자동 전환
    - V1.36: Step 3 비교 규칙 표에서 "QTableView::setSpan: single cell span won't be added"
      경고가 콘솔에 반복 출력되던 문제 수정
    - V1.37: AutoCAD Mapping의 모든 항목에 추출방식(값 그대로 / 구분자로 나누기 / 정규식 추출)과
      결과 미리보기 추가. ISO DWG No. 안에 들어 있는 Line No.만 잘라 비교 Key로 사용할 수 있다.
-   - V1.38: Step 3에 "Source(ISO)에 Line No. 칸이 없음" 체크 추가. 체크하면 Line List의 Line No.가
-     ISO DWG No. 안에 포함된 경우 같은 Line으로 매칭한다.
+   - V1.39: Step 3에 "ISO DWG ↔ Line No. 매칭표" 추가. ISO DWG에 Line No.가 없을 때
+     사용자가 만든 Excel 매칭표로 Line No.를 채워 비교한다. 추출된 ISO 목록으로 빈 양식도 만들어 준다.
+     (V1.38의 ISO DWG No. 포함 매칭은 복잡해서 이 방식으로 대체했고, 남아 있으면 제거한다)
    - 이미 적용된 수정은 건너뛴다
 2) config/*.json 정리 (원본은 config/_backup_YYYYMMDD_HHMMSS/ 폴더에 백업)
    - 현재 PC에 존재하지 않는 절대경로를 빈 값으로 정리
@@ -33,17 +34,18 @@ from pathlib import Path
 
 
 SRC_NAMES = [
+    "line_iso_desktop_tool_V1.38.py",
     "line_iso_desktop_tool_V1.37.py",
     "line_iso_desktop_tool_V1.36.py",
     "line_iso_desktop_tool_V1.35.py",
     "line_iso_desktop_tool_V1.34.py",
 ]
-DST_NAME = "line_iso_desktop_tool_V1.38.py"
-NEW_VERSION = "V1.38"
+DST_NAME = "line_iso_desktop_tool_V1.39.py"
+NEW_VERSION = "V1.39"
 
 HEADER_NOTES = [
-    "# V1.38: Adds a Step 3 option to match Line List Line No. contained in the ISO DWG No. "
-    "when the source has no Line No. field.\n",
+    "# V1.39: Adds an ISO DWG No. <-> Line No. mapping table (Excel) in Step 3 for drawings without a Line No., "
+    "replacing the V1.38 contained-in-ISO-No. matching.\n",
     "# V1.37: Adds split/regex extraction with live preview to every AutoCAD mapping field, "
     "so Line No. can be cut out of the ISO DWG No. text.\n",
     "# V1.36: Stops the Step 3 rule table from printing 'single cell span won't be added' Qt warnings.\n",
@@ -102,7 +104,9 @@ REPLACEMENTS = [
 # 실행부(# 9. 실행) 바로 앞에 끼워 넣는 코드 블록. 기존 프로그램과 같은 monkey-patch 방식이다.
 RUN_SECTION_ANCHOR = "# =========================================================\n# 9. 실행\n"
 V137_MARKER = "# 8Q. V1.37 AutoCAD 추출값 Customizing"
-V138_MARKER = "# 8R. V1.38 Source에 Line No. 칸이 없는 경우"
+V139_MARKER = "# 8S. V1.39 ISO DWG ↔ Line No. 매칭표"
+# V1.38에서 넣었다가 V1.39 매칭표로 대체한 블록. 남아 있으면 제거한다.
+REMOVED_V138_START = "# =========================================================\n# 8R. V1.38 Source에 Line No. 칸이 없는 경우"
 V137_BLOCK = r'''# =========================================================
 # 8Q. V1.37 AutoCAD 추출값 Customizing: 구분자로 나누기 / 정규식 추출
 # =========================================================
@@ -383,170 +387,209 @@ LineIsoDesktopTool.extract_dwg_folder_core_console = _v37_extract_dwg_folder_cor
 
 
 '''
-V138_BLOCK = r'''# =========================================================
-# 8R. V1.38 Source에 Line No. 칸이 없는 경우: ISO DWG No. 포함 매칭
+V139_BLOCK = r'''# =========================================================
+# 8S. V1.39 ISO DWG ↔ Line No. 매칭표
 # =========================================================
-# 프로젝트마다 ISO DWG No. 형식이 달라 구분자/정규식으로 Line No.를 잘라낼 수 없는 경우를 위해,
-# Step 3에서 체크하면 "Line List의 Line No.가 Source의 ISO DWG No.(또는 Line No./파일명) 안에 들어 있으면"
-# 같은 Line으로 짝을 짓는다. 비교 직전에 Source 각 행의 line_no_normalized를 찾은 Line List Key로 바꾸므로
+# ISO DWG에 Line No.가 없는 프로젝트는 사용자가 만든 매칭표(Excel: ISO DWG No. / Line No.)로
+# Source 각 행의 Line No.를 채운 뒤 비교한다. 매칭표에 없는 ISO는 추출된 값을 그대로 쓴다.
 # Report 기준 3가지(Data Source / Line List / 전체)가 모두 같은 방식으로 동작한다.
-#
-# 오매칭 방지 규칙
-# 1) Source 값이 Line List Key와 정확히 같으면 그대로 사용 (EXACT)
-# 2) 구분자(- . / _) 경계로 떨어지는 부분 문자열 중 Line List Key와 같은 것 (ISO_NO_CONTAINS)
-# 3) 2)가 없으면 경계와 상관없이 포함되는 6자 이상 Key (ISO_NO_CONTAINS_LOOSE)
-# 2)/3)에서 여러 개가 걸리면 가장 긴 Key를 쓰고, 같은 길이로 2개 이상이면 매칭하지 않는다 (AMBIGUOUS).
 
-_V38_SEPARATORS = set("-/._")
-_V38_LOOSE_MIN_LENGTH = 6
-_V38_PREV_CREATE_COMPARE_REPORT = LineIsoDesktopTool.create_compare_report
-_V38_PREV_BUILD_COMPARE_DATA_TAB = LineIsoDesktopTool._build_compare_data_tab
+_V39_PREV_CREATE_COMPARE_REPORT = LineIsoDesktopTool.create_compare_report
+_V39_PREV_BUILD_COMPARE_DATA_TAB = LineIsoDesktopTool._build_compare_data_tab
 
 
-def _v38_pick_longest(found) -> tuple:
-    found = sorted(set(found), key=len, reverse=True)
-    if not found:
-        return "", ""
-    if len(found) > 1 and len(found[0]) == len(found[1]):
-        return "", "AMBIGUOUS: " + ", ".join(k for k in found if len(k) == len(found[0]))
-    return found[0], ""
+def _v39_iso_key(value) -> str:
+    return re.sub(r"\s+", "", normalize_text(value)).upper()
 
 
-def _v38_find_contained_key(text: str, line_keys: set, loose_keys: list) -> tuple:
-    if not text:
-        return "", ""
-
-    starts = [0] + [i + 1 for i, ch in enumerate(text) if ch in _V38_SEPARATORS]
-    ends = [i for i, ch in enumerate(text) if ch in _V38_SEPARATORS] + [len(text)]
-    bounded = [text[i:j] for i in starts for j in ends if j > i and text[i:j] in line_keys]
-    key, note = _v38_pick_longest(bounded)
-    if key or note:
-        return key, note or "ISO_NO_CONTAINS"
-
-    key, note = _v38_pick_longest([k for k in loose_keys if k in text])
-    if key or note:
-        return key, note or "ISO_NO_CONTAINS_LOOSE"
-    return "", ""
+def _v39_source_iso_value(row) -> str:
+    iso = normalize_text(row.get("iso_dwg_no", ""))
+    if iso:
+        return iso
+    return Path(normalize_text(row.get("source_file", ""))).stem
 
 
-def resolve_source_line_keys_by_iso_contains(source_df: pd.DataFrame, line_df: pd.DataFrame) -> tuple:
-    # Source 행마다 Line List Key를 찾아 line_no_normalized에 넣고, 매칭 방식은 line_no_match 열에 남긴다.
-    source_df = source_df.copy()
-    if "line_no_normalized" not in line_df.columns:
-        line_df = line_df.copy()
-        line_df["line_no_normalized"] = line_df.get("line_no", pd.Series([""] * len(line_df))).apply(normalize_line_no)
-    line_keys = {normalize_text(k) for k in line_df["line_no_normalized"].tolist() if normalize_text(k)}
-    loose_keys = [k for k in line_keys if len(k) >= _V38_LOOSE_MIN_LENGTH]
+def load_iso_line_no_table(path: Path) -> tuple:
+    # 첫 Sheet에서 ISO/DWG가 들어간 머리글을 ISO DWG No. 열, LINE이 들어간 머리글을 Line No. 열로 쓴다.
+    # 머리글을 못 찾으면 A열=ISO DWG No., B열=Line No.로 본다.
+    df = pd.read_excel(path, dtype=str).fillna("")
+    if df.shape[1] < 2:
+        raise ValueError("매칭표에는 ISO DWG No.와 Line No. 2개 열이 필요합니다.")
+    headers = [normalize_text(c).upper() for c in df.columns]
+    iso_idx = next((i for i, h in enumerate(headers) if "ISO" in h or "DWG" in h), 0)
+    line_idx = next((i for i, h in enumerate(headers) if "LINE" in h and i != iso_idx), 1 if iso_idx == 0 else 0)
 
-    resolved_keys = []
-    methods = []
-    for _, row in source_df.iterrows():
-        texts = [
-            normalize_line_no(row.get("line_no", "")),
-            normalize_line_no(row.get("iso_dwg_no", "")),
-            normalize_line_no(Path(normalize_text(row.get("source_file", ""))).stem),
-        ]
-        current = normalize_text(row.get("line_no_normalized", "")) or texts[0]
-
-        if current in line_keys:
-            resolved_keys.append(current)
-            methods.append("EXACT")
+    table = {}
+    duplicates = 0
+    for iso, line_no in zip(df.iloc[:, iso_idx], df.iloc[:, line_idx]):
+        key, line_no = _v39_iso_key(iso), normalize_text(line_no)
+        if not key or not line_no:
             continue
-
-        key, method = "", "NOT_FOUND"
-        for text in texts:
-            found_key, found_method = _v38_find_contained_key(text, line_keys, loose_keys)
-            if found_key:
-                key, method = found_key, found_method
-                break
-            if found_method:
-                method = found_method
-                break
-
-        resolved_keys.append(key or current)
-        methods.append(method)
-
-    source_df["line_no_normalized"] = resolved_keys
-    source_df["line_no_match"] = methods
-    return source_df, pd.Series(methods).value_counts().to_dict() if methods else {}
+        if key in table:
+            duplicates += 1
+            continue
+        table[key] = line_no
+    return table, duplicates
 
 
-def _v38_line_no_contains_enabled(self) -> bool:
-    checkbox = getattr(self, "line_no_contains_checkbox", None)
+def apply_iso_line_no_table(source_df: pd.DataFrame, table: dict) -> tuple:
+    source_df = source_df.copy()
+    if "line_no" not in source_df.columns:
+        source_df["line_no"] = ""
+    line_nos, keys, flags = [], [], []
+    for _, row in source_df.iterrows():
+        line_no = table.get(_v39_iso_key(_v39_source_iso_value(row)), "")
+        if line_no:
+            flags.append("매칭표")
+        else:
+            line_no = normalize_text(row.get("line_no", ""))
+            flags.append("매칭표에 없음")
+        line_nos.append(line_no)
+        keys.append(normalize_line_no(line_no))
+    source_df["line_no"] = line_nos
+    source_df["line_no_normalized"] = keys
+    source_df["line_no_from"] = flags
+    return source_df, flags.count("매칭표"), flags.count("매칭표에 없음")
+
+
+def _v39_table_enabled(self) -> bool:
+    checkbox = getattr(self, "iso_line_table_checkbox", None)
     if checkbox is not None:
         return checkbox.isChecked()
-    return bool(self.config.get("compare", {}).get("line_no_contained_in_iso", False))
+    return bool(self.config.get("compare", {}).get("iso_line_table_enabled", False))
 
 
-def _v38_create_compare_report(self):
-    if not _v38_line_no_contains_enabled(self):
-        return _V38_PREV_CREATE_COMPARE_REPORT(self)
+def _v39_save_table_option(self):
+    compare = self.config.setdefault("compare", {})
+    compare["iso_line_table_enabled"] = self.iso_line_table_checkbox.isChecked()
+    compare["iso_line_table_path"] = normalize_text(self.iso_line_table_edit.text())
+    save_config(self.config)
 
+
+def _v39_choose_iso_line_table(self):
+    current = normalize_text(self.iso_line_table_edit.text())
+    start_dir = _v22_existing_dir(current, self.get_extracted_dir())
+    file_path, _ = QFileDialog.getOpenFileName(self, "ISO DWG ↔ Line No. 매칭표 선택", str(start_dir), "Excel Files (*.xlsx *.xlsm *.xls)")
+    if file_path:
+        self.iso_line_table_edit.setText(file_path)
+        self.iso_line_table_checkbox.setChecked(True)
+        _v39_save_table_option(self)
+
+
+def _v39_make_iso_line_table_template(self):
+    # 추출된 Source의 ISO DWG No. 목록으로 빈 매칭표를 만든다. Line No. 열만 채우면 된다.
     try:
-        extracted_dir = self.save_path_config()
-        line_path = extracted_dir / "line_list_extracted.xlsx"
         source_key, source_label, source_path, fallback_paths = self.get_compare_source_info()
         if not source_path.exists():
             source_path = next((p for p in fallback_paths if p.exists()), source_path)
-        if not line_path.exists() or not source_path.exists():
-            # 파일이 없으면 기존 함수가 안내 메시지를 띄운다.
-            return _V38_PREV_CREATE_COMPARE_REPORT(self)
-
-        self.setCursor(Qt.WaitCursor)
-        self.append_compare_log("ISO DWG No. 포함 매칭으로 Source Line No. 찾는 중...", 3)
-        line_df = pd.read_excel(line_path, dtype=str).fillna("")
+        if not source_path.exists():
+            show_warn(self, "확인", f"{source_label} 추출 파일이 없습니다. Step 2에서 먼저 추출하세요.\n{source_path}")
+            return
         source_df = pd.read_excel(source_path, dtype=str).fillna("")
-        resolved_df, stats = resolve_source_line_keys_by_iso_contains(source_df, line_df)
-        resolved_path = extracted_dir / f"{source_path.stem}_line_no_resolved.xlsx"
-        resolved_df.to_excel(resolved_path, index=False, engine="openpyxl")
-        self.setCursor(Qt.ArrowCursor)
+        iso_list = []
+        for _, row in source_df.iterrows():
+            iso = _v39_source_iso_value(row)
+            if iso and iso not in iso_list:
+                iso_list.append(iso)
+
+        output_path = self.get_extracted_dir() / "iso_line_no_table.xlsx"
+        if output_path.exists():
+            # 사용자가 작성 중인 매칭표를 덮어쓰지 않는다.
+            output_path = output_path.with_name(f"iso_line_no_table_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx")
+        pd.DataFrame({"ISO DWG No.": iso_list, "Line No.": [""] * len(iso_list)}).to_excel(output_path, index=False, engine="openpyxl")
+
+        self.iso_line_table_edit.setText(str(output_path))
+        self.iso_line_table_checkbox.setChecked(True)
+        _v39_save_table_option(self)
+        show_info(
+            self,
+            "매칭표 양식 생성",
+            f"ISO DWG No. {len(iso_list)}개로 매칭표 양식을 만들었습니다.\n{output_path}\n\n"
+            "Line No. 열에 Line List와 같은 형식의 Line No.를 채우고 저장한 뒤 Report를 생성하세요.",
+        )
+        self.open_excel_file(output_path, "매칭표 없음")
     except Exception as e:
-        self.setCursor(Qt.ArrowCursor)
-        show_error(self, "ISO DWG No. 포함 매칭 오류", str(e))
+        show_error(self, "매칭표 양식 생성 오류", str(e))
+
+
+def _v39_create_compare_report(self):
+    if not _v39_table_enabled(self):
+        return _V39_PREV_CREATE_COMPARE_REPORT(self)
+
+    table_path = Path(normalize_text(self.iso_line_table_edit.text())) if getattr(self, "iso_line_table_edit", None) is not None else Path("")
+    if not table_path.is_file():
+        show_warn(self, "확인", "ISO DWG ↔ Line No. 매칭표 파일을 선택하세요.\n(매칭표를 쓰지 않으려면 체크를 해제하세요.)")
         return None
 
-    # 기존 비교 로직이 매칭 결과 파일을 Source로 읽도록 잠시 바꿔 끼운다.
+    try:
+        extracted_dir = self.save_path_config()
+        source_key, source_label, source_path, fallback_paths = self.get_compare_source_info()
+        if not source_path.exists():
+            source_path = next((p for p in fallback_paths if p.exists()), source_path)
+        if not source_path.exists():
+            # 파일이 없으면 기존 함수가 안내 메시지를 띄운다.
+            return _V39_PREV_CREATE_COMPARE_REPORT(self)
+
+        table, duplicates = load_iso_line_no_table(table_path)
+        source_df = pd.read_excel(source_path, dtype=str).fillna("")
+        resolved_df, matched, unmatched = apply_iso_line_no_table(source_df, table)
+        resolved_path = extracted_dir / f"{source_path.stem}_with_line_no_table.xlsx"
+        resolved_df.to_excel(resolved_path, index=False, engine="openpyxl")
+    except Exception as e:
+        show_error(self, "매칭표 적용 오류", str(e))
+        return None
+
+    # 기존 비교 로직이 매칭표를 적용한 파일을 Source로 읽도록 잠시 바꿔 끼운다.
     self.get_compare_source_info = lambda: (source_key, source_label, resolved_path, [])
     try:
-        result = _V38_PREV_CREATE_COMPARE_REPORT(self)
+        result = _V39_PREV_CREATE_COMPARE_REPORT(self)
     finally:
         del self.get_compare_source_info
 
-    stat_text = ", ".join(f"{k} {v}건" for k, v in stats.items())
-    self.append_compare_log(f"ISO DWG No. 포함 매칭 결과: {stat_text}", None)
-    self.append_compare_log(f"행별 매칭 방식(line_no_match 열): {resolved_path}", None)
+    self.append_compare_log(f"매칭표 적용: {table_path.name} / 매칭 {matched}건, 매칭표에 없음 {unmatched}건", None)
+    if duplicates:
+        self.append_compare_log(f"매칭표에 같은 ISO DWG No.가 {duplicates}건 중복되어 첫 번째 행만 사용했습니다.", None)
+    self.append_compare_log(f"매칭표 적용 결과(line_no_from 열): {resolved_path}", None)
     return result
 
 
-def _v38_build_compare_data_tab(self):
-    _V38_PREV_BUILD_COMPARE_DATA_TAB(self)
+def _v39_build_compare_data_tab(self):
+    _V39_PREV_BUILD_COMPARE_DATA_TAB(self)
     tab = self.tabs.widget(self.tabs.count() - 1)
     root = tab.layout()
+    compare_cfg = self.config.get("compare", {})
 
-    group = QGroupBox("Line No. 매칭 방식")
+    group = QGroupBox("ISO DWG ↔ Line No. 매칭표 (ISO DWG에 Line No.가 없을 때)")
     layout = QVBoxLayout(group)
-    self.line_no_contains_checkbox = QCheckBox(
-        "Source(ISO)에 Line No. 칸이 없음 - Line List의 Line No.가 ISO DWG No. 안에 포함되어 있으면 같은 Line으로 매칭"
-    )
-    self.line_no_contains_checkbox.setChecked(bool(self.config.get("compare", {}).get("line_no_contained_in_iso", False)))
 
-    def save_option(*args):
-        self.config.setdefault("compare", {})["line_no_contained_in_iso"] = self.line_no_contains_checkbox.isChecked()
-        save_config(self.config)
+    self.iso_line_table_checkbox = QCheckBox("매칭표로 Source의 Line No. 채우기")
+    self.iso_line_table_checkbox.setChecked(bool(compare_cfg.get("iso_line_table_enabled", False)))
+    layout.addWidget(self.iso_line_table_checkbox)
 
-    self.line_no_contains_checkbox.toggled.connect(save_option)
-    layout.addWidget(self.line_no_contains_checkbox)
+    file_row = QHBoxLayout()
+    self.iso_line_table_edit = QLineEdit(normalize_text(compare_cfg.get("iso_line_table_path", "")))
+    self.iso_line_table_edit.setPlaceholderText("A열 ISO DWG No. / B열 Line No. 로 작성한 Excel")
+    choose_btn = QPushButton("매칭표 선택")
+    choose_btn.clicked.connect(lambda _checked=False: _v39_choose_iso_line_table(self))
+    template_btn = QPushButton("매칭표 양식 만들기")
+    template_btn.clicked.connect(lambda _checked=False: _v39_make_iso_line_table_template(self))
+    file_row.addWidget(QLabel("매칭표:"))
+    file_row.addWidget(self.iso_line_table_edit, 1)
+    file_row.addWidget(choose_btn)
+    file_row.addWidget(template_btn)
+    layout.addLayout(file_row)
 
     note = QLabel(
-        "예: Line List '30100109HE' ↔ ISO DWG No. 'AGCC.1917-3010-30100109HE-TK10.ISO-0002' → 같은 Line. "
-        "구분자(- . / _) 경계로 딱 떨어지는 값을 우선하고, 여러 개가 걸리면 가장 긴 Line No.를 사용합니다. "
-        "같은 길이로 2개 이상 걸리면 매칭하지 않습니다. "
-        "구분자/정규식으로 Line No.를 정확히 잘라낼 수 있는 프로젝트는 Step 2 추출방식을 쓰는 것이 더 정확합니다. "
-        "행별 매칭 결과는 Extracted 폴더의 *_line_no_resolved.xlsx (line_no_match 열)에서 확인할 수 있습니다."
+        "[매칭표 양식 만들기]를 누르면 추출된 ISO DWG No. 목록으로 Excel이 만들어집니다. "
+        "Line No. 열에 Line List와 같은 형식의 Line No.를 채운 뒤 Report를 생성하세요. "
+        "매칭표에 없는 ISO DWG는 추출된 Line No.를 그대로 사용합니다."
     )
     note.setWordWrap(True)
     note.setStyleSheet("color: #555;")
     layout.addWidget(note)
+
+    self.iso_line_table_checkbox.toggled.connect(lambda *_: _v39_save_table_option(self))
+    self.iso_line_table_edit.editingFinished.connect(lambda: _v39_save_table_option(self))
 
     insert_at = root.count()
     for i in range(root.count()):
@@ -557,15 +600,15 @@ def _v38_build_compare_data_tab(self):
     root.insertWidget(insert_at, group)
 
 
-LineIsoDesktopTool.create_compare_report = _v38_create_compare_report
-LineIsoDesktopTool._build_compare_data_tab = _v38_build_compare_data_tab
+LineIsoDesktopTool.create_compare_report = _v39_create_compare_report
+LineIsoDesktopTool._build_compare_data_tab = _v39_build_compare_data_tab
 
 
 '''
 
 CODE_BLOCKS = [
     ("AutoCAD 추출값 Customizing (구분자로 나누기 / 정규식 추출)", V137_MARKER, V137_BLOCK),
-    ("ISO DWG No. 포함 Line No. 매칭 옵션", V138_MARKER, V138_BLOCK),
+    ("ISO DWG ↔ Line No. 매칭표", V139_MARKER, V139_BLOCK),
 ]
 
 
@@ -587,10 +630,18 @@ def patch_source(src: Path) -> Path:
         if count != 1:
             raise SystemExit(
                 f"[중단] '{name}' 수정 위치를 찾지 못했습니다 (발견 {count}회).\n"
-                f"원본이 V1.34~V1.37 그대로인지 확인하세요: {src}"
+                f"원본이 V1.34~V1.38 그대로인지 확인하세요: {src}"
             )
         text = text.replace(old, new)
         print(f"[적용] {name}")
+
+    if REMOVED_V138_START in text:
+        start = text.index(REMOVED_V138_START)
+        # V1.38 블록은 항상 '# 9. 실행' 바로 앞에 들어갔다.
+        end = text.index(RUN_SECTION_ANCHOR, start)
+        text = text[:start] + text[end:]
+        text = "\n".join(line for line in text.split("\n") if not line.startswith("# V1.38: "))
+        print("[제거] V1.38 ISO DWG No. 포함 매칭 (매칭표 방식으로 대체)")
 
     for name, marker, block in CODE_BLOCKS:
         if marker in text:
