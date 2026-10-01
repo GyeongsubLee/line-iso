@@ -4,6 +4,15 @@ Line List ↔ Source Data QC Tool (`line_iso_desktop_tool`) 유지보수용 저�
 
 ## 수정 내역
 
+### V1.37
+- 2단계 AutoCAD 추출의 **모든 매핑 항목**에서 추출방식을 고를 수 있도록 함:
+  `값 그대로` / `구분자로 나누기` / `정규식 추출`. 결과는 오른쪽 `→`에 바로 미리 보여 줌
+- ISO DWG에 Line No. 칸이 따로 없고 ISO DWG No. 안에만 Line No.가 들어 있는 경우,
+  Line No.만 잘라서 비교 Key로 쓸 수 있음
+  - 예: `AGCC.1917-3010-30100109HE-TK10.ISO-0002` → 구분자 `-`, 3번째 → `30100109HE`
+  - 또는 정규식 `\d{8}[A-Z]+` → `30100109HE`
+- AutoCAD에 연결하지 않은 상태에서도 저장된 Mapping의 추출방식만 바꿔서 저장하거나 추출할 수 있음
+
 ### V1.36
 - Step 3 비교 규칙 표를 만들 때 콘솔에 `QTableView::setSpan: single cell span won't be added`가
   반복 출력되던 문제 수정 (기능에는 영향 없던 경고)
@@ -20,14 +29,14 @@ V1.34는 `config/project_settings.json`에 이전 담당자 PC의 경로(`D:\00.
 
 ## 적용 방법
 
-1. `apply_fix.py`를 `line_iso_desktop_tool_V1.35.py`(또는 V1.34)와 같은 폴더에 복사
+1. `apply_fix.py`를 지금 쓰는 `line_iso_desktop_tool_V1.3x.py`(V1.34~V1.36)와 같은 폴더에 복사
 2. 그 폴더에서 실행:
    ```
    py apply_fix.py
    ```
-   - `line_iso_desktop_tool_V1.36.py`가 새로 생성됨 (기존 파일은 그대로 유지, 이미 적용된 수정은 건너뜀)
+   - `line_iso_desktop_tool_V1.37.py`가 새로 생성됨 (기존 파일은 그대로 유지, 이미 적용된 수정은 건너뜀)
    - `config/*.json` 정리 (원본은 `config/_backup_날짜시간/`에 백업)
-3. `line_iso_desktop_tool_V1.36.py` 실행
+3. `line_iso_desktop_tool_V1.37.py` 실행
 
 `config/project_settings.json`은 위 정리를 적용한 버전이다.
 
