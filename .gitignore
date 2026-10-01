@@ -1,0 +1,8 @@
+.build_venv/
+build/
+dist/
+release/
+*.spec
+app.ico
+__pycache__/
+config/_backup_*/
