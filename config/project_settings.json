@@ -1,0 +1,582 @@
+{
+  "project_name": "",
+  "line_list": {
+    "file_path": "",
+    "file_name": "Line Schedule_Rev.11 Total_260619.xlsx",
+    "sheet_name": "LINE SCHEDULE",
+    "header_start_row": 2,
+    "header_end_row": 4,
+    "data_start_row": 6,
+    "field_mapping": {
+      "line_no": {
+        "source_col": "G",
+        "transform": "direct",
+        "delimiter": "-",
+        "part_index": 1
+      },
+      "design_pressure": {
+        "source_col": "U",
+        "transform": "direct",
+        "delimiter": "-",
+        "part_index": 1
+      },
+      "design_temperature": {
+        "source_col": "Y",
+        "transform": "direct",
+        "delimiter": "-",
+        "part_index": 1
+      },
+      "operating_pressure": {
+        "source_col": "O",
+        "transform": "direct",
+        "delimiter": "-",
+        "part_index": 1
+      },
+      "operating_temperature": {
+        "source_col": "N",
+        "transform": "direct",
+        "delimiter": "-",
+        "part_index": 1
+      },
+      "test_pressure": {
+        "source_col": "AH",
+        "transform": "direct",
+        "delimiter": "-",
+        "part_index": 1
+      },
+      "test_medium": {
+        "source_col": "AG",
+        "transform": "direct",
+        "delimiter": "-",
+        "part_index": 1
+      },
+      "nde_ratio": {
+        "source_col": "AR",
+        "transform": "direct",
+        "delimiter": "-",
+        "part_index": 1
+      },
+      "pwht": {
+        "source_col": "AD",
+        "transform": "direct",
+        "delimiter": "-",
+        "part_index": 1
+      },
+      "critical_line": {
+        "source_col": "",
+        "transform": "direct",
+        "delimiter": "-",
+        "part_index": 1
+      },
+      "painting_system": {
+        "source_col": "AS",
+        "transform": "direct",
+        "delimiter": "-",
+        "part_index": 1
+      },
+      "tracing": {
+        "source_col": "AF",
+        "transform": "direct",
+        "delimiter": "-",
+        "part_index": 1
+      },
+      "insulation": {
+        "source_col": "U",
+        "transform": "direct",
+        "delimiter": "-",
+        "part_index": 1
+      },
+      "pipe_diameter": {
+        "source_col": "D",
+        "transform": "direct",
+        "delimiter": "-",
+        "part_index": 1
+      },
+      "pipe_class": {
+        "source_col": "I",
+        "transform": "direct",
+        "delimiter": "-",
+        "part_index": 1
+      },
+      "fluid_service": {
+        "source_col": "G",
+        "transform": "split",
+        "delimiter": "-",
+        "part_index": 2
+      }
+    }
+  },
+  "iso_dwg": {
+    "mapping_method": "cad_user_selection",
+    "created_at": "2026-09-22T13:27:27",
+    "search_radius": 100.0,
+    "fields": {
+      "iso_dwg_no": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "ISO DWG No.",
+        "sample_text": "GCC-DLM-DDD-12200-09-4304-TKM-ISO-00034",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CB7",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 308.505,
+          "y": 55.3,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 3.36875,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "line_no": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "Line No.",
+        "sample_text": "320-P21-0025",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CBE",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 96.7887,
+          "y": 28.5,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "design_pressure": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "Design Pressure",
+        "sample_text": "4.384",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CC3",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 51.2887,
+          "y": 23.5,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "design_temperature": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "Design Temperature",
+        "sample_text": "340",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CC4",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 51.2887,
+          "y": 18.5,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "operating_pressure": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "Operating Pressure",
+        "sample_text": "0.241",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CC5",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 51.2887,
+          "y": 13.5,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "operating_temperature": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "Operating Temperature",
+        "sample_text": "290",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CC6",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 51.2887,
+          "y": 8.5,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "test_pressure": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "Test Pressure",
+        "sample_text": "6.3",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CC7",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 104.289,
+          "y": 23.5,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "test_medium": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "Test Medium",
+        "sample_text": "Nitrogen(azot)",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CC8",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 104.289,
+          "y": 18.5,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "nde_ratio": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "Weld Inspection / NDE Ratio",
+        "sample_text": "2",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CC9",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 104.289,
+          "y": 13.5,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "pwht": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "PWHT",
+        "sample_text": "No(Нет)",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CCA",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 104.289,
+          "y": 8.5,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "critical_line": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "Critical Line",
+        "sample_text": "Yes(Да)",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CCB",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 157.289,
+          "y": 23.5,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "painting_system": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "Painting System",
+        "sample_text": "C1->C2",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CCC",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 157.289,
+          "y": 18.5,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "tracing": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "Tracing",
+        "sample_text": "2",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CC9",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 104.289,
+          "y": 13.5,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "insulation": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "Insulation",
+        "sample_text": "H",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CCE",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 157.289,
+          "y": 8.5,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "fluid_service": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "Fluid Service",
+        "sample_text": "P21",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CC2",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 209.28900000000002,
+          "y": 28.0,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "pipe_diameter": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "Pipe Diameter",
+        "sample_text": "100",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CD1",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 209.28900000000002,
+          "y": 13.5,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      },
+      "pipe_class": {
+        "method": "cad_text_coordinate_template",
+        "field_name": "Pipe Class",
+        "sample_text": "ACB2B05SN56",
+        "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
+        "object_name": "AcDbText",
+        "layer": "GT_1",
+        "handle": "10CB5",
+        "parent_block_handle": "",
+        "block_name": "",
+        "attribute_tag": "",
+        "attribute_value": "",
+        "insertion_point": {
+          "x": 209.28900000000002,
+          "y": 8.5,
+          "z": 0.0
+        },
+        "rotation": 0.0,
+        "height": 1.925,
+        "color": 256,
+        "linetype": "ByLayer",
+        "transform": "direct",
+        "delimiter": ",",
+        "part_index": 1,
+        "search_radius": 100.0
+      }
+    }
+  },
+  "core_console": {
+    "accoreconsole_path": "C:\\Program Files\\Autodesk\\AutoCAD 2023\\accoreconsole.exe",
+    "timeout_sec": 90
+  },
+  "paths": {
+    "extracted_dir": "",
+    "idf_folder": "",
+    "idf_collected_folder": "",
+    "pcf_folder": "",
+    "pcf_collected_folder": "",
+    "iso_reference_dwg": "",
+    "iso_dwg_folder": "",
+    "line_list_folder": "",
+    "mdb_file": "",
+    "mdb_folder": "",
+    "mdb_mapping_json": ""
+  },
+  "data_source": {
+    "source_type": "MDB"
+  },
+  "compare": {
+    "report_basis": "Data Source 기준 (QC 기본)",
+    "compare_source": "ISO_DWG"
+  }
+}
