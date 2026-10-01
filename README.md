@@ -4,6 +4,9 @@ Line List ↔ Source Data QC Tool (`line_iso_desktop_tool`) 유지보수용 저�
 
 ## 수정 내역
 
+### V1.41
+- 사이드바 이메일 변경: `gyeongsub@dlenc.co.kr`
+
 ### V1.40
 - 사이드바 개발자 정보 변경: `Developed by 김영철, 이경섭` / `02-369-5533`
 
@@ -42,14 +45,14 @@ V1.34는 `config/project_settings.json`에 이전 담당자 PC의 경로(`D:\00.
 
 ## 적용 방법
 
-1. `apply_fix.py`를 지금 쓰는 `line_iso_desktop_tool_V1.3x.py`(V1.34~V1.39)와 같은 폴더에 복사
+1. `apply_fix.py`를 지금 쓰는 `line_iso_desktop_tool_V1.3x.py`(V1.34~V1.40)와 같은 폴더에 복사
 2. 그 폴더에서 실행:
    ```
    py apply_fix.py
    ```
-   - `line_iso_desktop_tool_V1.40.py`가 새로 생성됨 (기존 파일은 그대로 유지, 이미 적용된 수정은 건너뜀)
+   - `line_iso_desktop_tool_V1.41.py`가 새로 생성됨 (기존 파일은 그대로 유지, 이미 적용된 수정은 건너뜀)
    - `config/*.json` 정리 (원본은 `config/_backup_날짜시간/`에 백업)
-3. `line_iso_desktop_tool_V1.40.py` 실행
+3. `line_iso_desktop_tool_V1.41.py` 실행
 
 `config/project_settings.json`은 위 정리를 적용한 버전이다.
 
@@ -57,13 +60,13 @@ V1.34는 `config/project_settings.json`에 이전 담당자 PC의 경로(`D:\00.
 
 ## 배포용 exe 만들기
 
-1. 한 폴더에 `line_iso_desktop_tool_V1.40.py`, `build_exe.bat`, `make_icon.py`, (공유할) `config` 폴더를 둔다
+1. 한 폴더에 `line_iso_desktop_tool_V1.41.py`, `build_exe.bat`, `make_icon.py`, (공유할) `config` 폴더를 둔다
 2. `build_exe.bat` 더블클릭
    - 빌드 전용 가상환경(`.build_venv`)에 필요한 패키지만 설치해서 빌드 → 용량이 작고 깔끔함
    - 폴더 안에서 가장 높은 버전의 `line_iso_desktop_tool_V*.py`를 자동으로 사용
    - 프로그램에 들어 있는 아이콘을 exe 아이콘으로 사용
    - `config` 폴더의 공용 설정(매핑, 비교 항목, 비교 규칙)은 함께 넣고,
      개인 경로가 들어 있는 `project_settings.json`, `project_mapping.json`은 제외
-3. 결과: `release\LineIsoQC_V1.40.zip` ← 이 파일을 배포
-   - 받는 사람은 압축을 풀고 `LineIsoQC_V1.40.exe` 실행 (Python 설치 불필요)
+3. 결과: `release\LineIsoQC_V1.41.zip` ← 이 파일을 배포
+   - 받는 사람은 압축을 풀고 `LineIsoQC_V1.41.exe` 실행 (Python 설치 불필요)
    - `input`, `output`, `config` 폴더는 exe 옆에 자동으로 생성됨

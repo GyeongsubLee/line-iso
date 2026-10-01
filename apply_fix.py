@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-line_iso_desktop_tool V1.34 ~ V1.39 -> V1.40 패치 스크립트
+line_iso_desktop_tool V1.34 ~ V1.40 -> V1.41 패치 스크립트
 
 사용법 (지금 쓰는 line_iso_desktop_tool_V1.3x.py 와 같은 폴더에 이 파일을 두고):
     py apply_fix.py
 또는 경로 직접 지정:
-    py apply_fix.py "C:\\...\\line_iso_desktop_tool_V1.39.py"
+    py apply_fix.py "C:\\...\\line_iso_desktop_tool_V1.40.py"
 
 하는 일
-1) line_iso_desktop_tool_V1.40.py 생성 (원본 파일은 그대로 둔다)
+1) line_iso_desktop_tool_V1.41.py 생성 (원본 파일은 그대로 둔다)
    - V1.35: get_extracted_dir() / get_reports_dir() 가 저장된 폴더를 만들 수 없으면
      (다른 PC의 D: 드라이브 등) 기본 폴더(output/extracted, output/reports)로 자동 전환
    - V1.36: Step 3 비교 규칙 표에서 "QTableView::setSpan: single cell span won't be added"
@@ -19,6 +19,7 @@ line_iso_desktop_tool V1.34 ~ V1.39 -> V1.40 패치 스크립트
      사용자가 만든 Excel 매칭표로 Line No.를 채워 비교한다. 추출된 ISO 목록으로 빈 양식도 만들어 준다.
      (V1.38의 ISO DWG No. 포함 매칭은 복잡해서 이 방식으로 대체했고, 남아 있으면 제거한다)
    - V1.40: 사이드바 개발자 정보 변경 (김영철, 이경섭 / 02-369-5533)
+   - V1.41: 사이드바 이메일 변경 (gyeongsub@dlenc.co.kr)
    - 이미 적용된 수정은 건너뛴다
 2) config/*.json 정리 (원본은 config/_backup_YYYYMMDD_HHMMSS/ 폴더에 백업)
    - 현재 PC에 존재하지 않는 절대경로를 빈 값으로 정리
@@ -35,6 +36,7 @@ from pathlib import Path
 
 
 SRC_NAMES = [
+    "line_iso_desktop_tool_V1.40.py",
     "line_iso_desktop_tool_V1.39.py",
     "line_iso_desktop_tool_V1.38.py",
     "line_iso_desktop_tool_V1.37.py",
@@ -42,10 +44,11 @@ SRC_NAMES = [
     "line_iso_desktop_tool_V1.35.py",
     "line_iso_desktop_tool_V1.34.py",
 ]
-DST_NAME = "line_iso_desktop_tool_V1.40.py"
-NEW_VERSION = "V1.40"
+DST_NAME = "line_iso_desktop_tool_V1.41.py"
+NEW_VERSION = "V1.41"
 
 HEADER_NOTES = [
+    "# V1.41: Updates the sidebar developer e-mail.\n",
     "# V1.40: Updates the sidebar developer contact.\n",
     "# V1.39: Adds an ISO DWG No. <-> Line No. mapping table (Excel) in Step 3 for drawings without a Line No., "
     "replacing the V1.38 contained-in-ISO-No. matching.\n",
@@ -114,6 +117,11 @@ REPLACEMENTS = [
         "사이드바 연락처",
         '    developer_phone = QLabel("02-369-5379")\n',
         '    developer_phone = QLabel("02-369-5533")\n',
+    ),
+    (
+        "사이드바 이메일",
+        '    developer_email = QLabel("kyc4888@dlenc.co.kr")\n',
+        '    developer_email = QLabel("gyeongsub@dlenc.co.kr")\n',
     ),
 ]
 
@@ -646,7 +654,7 @@ def patch_source(src: Path) -> Path:
         if count != 1:
             raise SystemExit(
                 f"[중단] '{name}' 수정 위치를 찾지 못했습니다 (발견 {count}회).\n"
-                f"원본이 V1.34~V1.39 그대로인지 확인하세요: {src}"
+                f"원본이 V1.34~V1.40 그대로인지 확인하세요: {src}"
             )
         text = text.replace(old, new)
         print(f"[적용] {name}")
