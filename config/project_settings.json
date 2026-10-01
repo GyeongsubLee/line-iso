@@ -426,17 +426,17 @@
       "tracing": {
         "method": "cad_text_coordinate_template",
         "field_name": "Tracing",
-        "sample_text": "2",
+        "sample_text": "",
         "source_dwg": "12200-09-4304-320-P21-0025-ACB2B05SN56-01.dwg",
         "object_name": "AcDbText",
         "layer": "GT_1",
-        "handle": "10CC9",
+        "handle": "",
         "parent_block_handle": "",
         "block_name": "",
         "attribute_tag": "",
         "attribute_value": "",
         "insertion_point": {
-          "x": 104.289,
+          "x": 157.289,
           "y": 13.5,
           "z": 0.0
         },
