@@ -68,7 +68,7 @@ DISPLAY_FORMAT_HEADERS = [
 DISPLAY_DEFAULT_MODES = {
     "NO": ("자동번호", ""),
     "Part": ("특수규칙", ""),
-    "Drawing Number": ("BM 열 복사", "DRAWING NUMBER"),
+    "Drawing Number": ("3D BM 열 복사", "DRAWING NUMBER"),
     "Category1": ("PCWBS 파일 매핑", "Category1"),
     "Category2": ("PCWBS 파일 매핑", "Category2"),
     "Category3": ("PCWBS 파일 매핑", "Category3"),
@@ -79,23 +79,23 @@ DISPLAY_DEFAULT_MODES = {
     "Category8": ("빈칸", ""),
     "Category9": ("빈칸", ""),
     "Category10": ("빈칸", ""),
-    "CWP No.": ("BM 열 복사", "ISO_DWG_ID"),
-    "Fluid": ("BM 열 복사", "FLUID"),
-    "Serial": ("BM 열 복사", "SERIAL"),
-    "Sheet": ("BM 열 복사", "SHEET"),
+    "CWP No.": ("3D BM 열 복사", "ISO_DWG_ID"),
+    "Fluid": ("3D BM 열 복사", "FLUID"),
+    "Serial": ("3D BM 열 복사", "SERIAL"),
+    "Sheet": ("3D BM 열 복사", "SHEET"),
     "Etc1": ("빈칸", ""),
     "Etc2": ("빈칸", ""),
     "Etc3": ("빈칸", ""),
     "Rev": ("빈칸", ""),
-    "Insulation Symbol": ("BM 열 복사", "INS. SPEC"),
+    "Insulation Symbol": ("3D BM 열 복사", "INS. SPEC"),
     "Insulation Temp (Operating Temp)": ("빈칸", ""),
     "Paint Symbol": ("빈칸", ""),
-    "Class": ("BM 열 복사", "CLASS"),
-    "Item": ("BM 열 복사", "SYMBOL"),
+    "Class": ("3D BM 열 복사", "CLASS"),
+    "Item": ("3D BM 열 복사", "SYMBOL"),
     "Unit Size": ("특수규칙", ""),
-    "Main": ("BM 열 복사", "SIZE-1"),
-    "Sub": ("BM 열 복사", "SIZE-2"),
-    "Qty": ("BM 열 복사", "QTY"),
+    "Main": ("3D BM 열 복사", "SIZE-1"),
+    "Sub": ("3D BM 열 복사", "SIZE-2"),
+    "Qty": ("3D BM 열 복사", "QTY"),
     "Design Factor": ("빈칸", ""),
     "Total Qty": ("빈칸", ""),
     "3D BIMWelding_Point(Main)": ("빈칸", ""),
@@ -103,7 +103,7 @@ DISPLAY_DEFAULT_MODES = {
     "Field/Shop": ("빈칸", ""),
     "Assembly": ("빈칸", ""),
     "Error Description": ("빈칸", ""),
-    "Remark": ("BM 열 복사", "REMARK"),
+    "Remark": ("3D BM 열 복사", "REMARK"),
     "Remark2": ("빈칸", ""),
     "FileName": ("고정값", ""),
     "CD_SITE": ("고정값", ""),
@@ -113,8 +113,58 @@ DISPLAY_DEFAULT_MODES = {
     "Mtrl Group": ("고정값", "RUSSIA"),
 }
 
-MAPPING_MODES = ["BM 열 복사", "PCWBS 파일 매핑", "고정값", "빈칸", "자동번호", "특수규칙"]
+MAPPING_MODES = ["3D BM 열 복사", "PCWBS 파일 매핑", "고정값", "빈칸", "자동번호", "특수규칙"]
+# v8.12 이전 매핑 JSON 호환용 (입력 방식 이름 변경)
+LEGACY_MAPPING_MODES = {"BM 열 복사": "3D BM 열 복사"}
+SPECIAL_RULE_HEADERS = ["Part", "Unit Size"]
+
+MAPPING_MODE_HELP = {
+    "3D BM 열 복사": "선택한 3D BM 파일의 열 값을 그대로 복사합니다. 아래 칸에서 3D BM 열을 고르세요.",
+    "PCWBS 파일 매핑": (
+        "3번 탭 비교키(또는 Mapping Table)로 PCWBS 행을 찾아, 아래 칸에 입력한 PCWBS 열 값을 가져옵니다. "
+        "(Category1~10만 사용 가능)"
+    ),
+    "고정값": "아래 칸에 입력한 값을 모든 행에 동일하게 입력합니다.",
+    "빈칸": "값을 비워 둡니다.",
+    "자동번호": (
+        "1부터 행 순서대로 1씩 증가하는 번호를 입력합니다 (별도 설정 없음). "
+        "6번 File Split 시에는 분할 파일마다 1부터 다시 매깁니다."
+    ),
+    "특수규칙": (
+        "Part / Unit Size 열 전용 내장 규칙입니다.\n"
+        "· Part: 오른쪽 'Part 조건 규칙'을 위에서부터 검사해 처음 일치한 Part 값을 입력, 없으면 'Part 기본값'\n"
+        "· Unit Size: 'Unit Size 예외 Item 열' 조건에 일치하면 'U x mm', 아니면 'Unit Size 기본값'"
+    ),
+}
 PART_VALUES = ["PPA", "PPU", "FFA", "FFU", "CIA", "CIU"]
+
+# 3번 PCWBS 비교 방식
+COMPARE_METHOD_KEY = "비교키 생성 설정"
+COMPARE_METHOD_TABLE = "Mapping Table 사용"
+
+# 5번 Line No. 매칭 방식
+LINE_MATCH_EXACT = "완전 일치"
+LINE_MATCH_STRIP_SHEET = "Sh't No. 제거 후 일치 (Sh't No. = 마지막 구분자 뒤의 Text)"
+LINE_MATCH_DISPLAY_CONTAINS = "Display 값에 Line No. 포함할 경우"
+LINE_MATCH_LINE_CONTAINS = "Line No. 값에 Display 값 포함할 경우"
+LINE_MATCH_MODES = [
+    LINE_MATCH_EXACT,
+    LINE_MATCH_STRIP_SHEET,
+    LINE_MATCH_DISPLAY_CONTAINS,
+    LINE_MATCH_LINE_CONTAINS,
+]
+# v8.11 이전 규칙 JSON 호환용
+LEGACY_LINE_MATCH_MODES = {
+    "Display 끝 Sheet No. 제거 후 일치": LINE_MATCH_STRIP_SHEET,
+    "Display 값에 Line No. 포함": LINE_MATCH_DISPLAY_CONTAINS,
+    "Line No. 값에 Display 값 포함": LINE_MATCH_LINE_CONTAINS,
+}
+
+# 5번 Insulation Temperature 입력 방식
+INS_TEMP_SOURCE_LINE = "Line List 온도 열"
+INS_TEMP_SOURCE_RULE = "Display 열 기준 규칙 파일"
+INS_TEMP_SOURCE_RULE_FIRST = "규칙 파일 우선 → 없으면 Line List"
+INS_TEMP_SOURCES = [INS_TEMP_SOURCE_LINE, INS_TEMP_SOURCE_RULE, INS_TEMP_SOURCE_RULE_FIRST]
 
 
 # -----------------------------------------------------------------------------
@@ -322,7 +372,7 @@ def write_rows_to_sheet(ws, headers, rows):
 class BmDmcsTool:
     def __init__(self, root):
         self.root = root
-        self.root.title("Piping Engineering - 3D BIM BM to Display Format Tool v8.11 Beta")
+        self.root.title("Piping Engineering - 3D BIM BM to Display Format Tool v8.13 Beta")
         self.root.geometry("1520x980")
         self.root.minsize(1200, 820)
 
@@ -623,8 +673,8 @@ class BmDmcsTool:
                         relief="flat",
                         bd=0,
                         cursor="hand2",
-                        padx=max(int(child.cget("padx") or 0), 8),
-                        pady=max(int(child.cget("pady") or 0), 4),
+                        padx=max(child.winfo_pixels(child.cget("padx") or 0), 8),
+                        pady=max(child.winfo_pixels(child.cget("pady") or 0), 4),
                         highlightthickness=0,
                         font=self.bold_font,
                     )
@@ -775,7 +825,7 @@ class BmDmcsTool:
         footer.grid(row=10, column=0, sticky="ew", padx=8, pady=(0, 8))
         tk.Label(
             footer,
-            text="REV. 8.11 BETA",
+            text="REV. 8.13 BETA",
             bg="#163E63",
             fg="#FFFFFF",
             font=("Arial", 10, "bold"),
@@ -940,13 +990,13 @@ class BmDmcsTool:
         files_frame.pack(fill="x", padx=10, pady=(10, 5))
         files_frame.columnconfigure(1, weight=1)
         self._file_row(files_frame, 0, "수정 완료 3D BM", self.pcwbs_bm_file, self.choose_pcwbs_bm_file)
-        tk.Label(files_frame, text="BM 시트").grid(row=1, column=0, sticky="w", pady=4)
+        tk.Label(files_frame, text="3D BM 시트").grid(row=1, column=0, sticky="w", pady=4)
         self.pcwbs_bm_sheet_combo = ttk.Combobox(files_frame, textvariable=self.pcwbs_bm_sheet, state="readonly", width=28)
         self.pcwbs_bm_sheet_combo.grid(row=1, column=1, sticky="w", padx=6)
         self.pcwbs_bm_sheet_combo.bind("<<ComboboxSelected>>", lambda _e: self.load_pcwbs_bm_headers())
         tk.Label(files_frame, text="헤더 행").grid(row=1, column=2, sticky="e")
         tk.Entry(files_frame, textvariable=self.pcwbs_bm_header_row, width=6).grid(row=1, column=3, sticky="w", padx=4)
-        tk.Button(files_frame, text="BM 열 불러오기", command=self.load_pcwbs_bm_headers, width=14).grid(row=1, column=4, padx=4)
+        tk.Button(files_frame, text="3D BM 열 불러오기", command=self.load_pcwbs_bm_headers, width=16).grid(row=1, column=4, padx=4)
 
         self._file_row(files_frame, 2, "PCWBS 기준 파일", self.pcwbs_ref_file, self.choose_pcwbs_ref_file)
         tk.Label(files_frame, text="PCWBS 시트").grid(row=3, column=0, sticky="w", pady=4)
@@ -958,8 +1008,62 @@ class BmDmcsTool:
         tk.Button(files_frame, text="PCWBS 열 불러오기", command=self.load_pcwbs_ref_headers, width=16).grid(row=3, column=4, padx=4)
         self._file_row(files_frame, 4, "결과 파일", self.pcwbs_output_file, self.choose_pcwbs_output_file, save=True)
 
+        # 비교 방식 선택: 비교키 생성 설정 / Mapping Table 중 하나만 활성화
+        self.pcwbs_compare_method = tk.StringVar(value=COMPARE_METHOD_KEY)
+        self.pcwbs_map_file = tk.StringVar(value="")
+        self.pcwbs_map_sheet = tk.StringVar(value="")
+        self.pcwbs_map_header_row = tk.StringVar(value="1")
+        self.pcwbs_map_info = tk.StringVar(
+            value="Mapping Table을 불러오면 1행 헤더(3D BM 열 / PCWBS 열)와 등록 건수가 표시됩니다."
+        )
+
+        method_frame = tk.LabelFrame(self.pcwbs_tab, text="비교 방식 선택", padx=10, pady=4)
+        method_frame.pack(fill="x", padx=10, pady=(5, 0))
+        for method in [COMPARE_METHOD_KEY, COMPARE_METHOD_TABLE]:
+            tk.Radiobutton(
+                method_frame,
+                text=method,
+                value=method,
+                variable=self.pcwbs_compare_method,
+                command=self.update_pcwbs_compare_method_ui,
+                font=self.bold_font,
+            ).pack(side="left", padx=(0, 24))
+        tk.Label(
+            method_frame,
+            text="선택한 방식만 활성화되고, 나머지 설정은 비활성화됩니다. (4번 Category 매핑에도 동일 적용)",
+            fg="#555555",
+        ).pack(side="left")
+
+        self.pcwbs_mapping_frame = tk.LabelFrame(
+            self.pcwbs_tab, text="Mapping Table (3D BM 값 → PCWBS 값)", padx=10, pady=5
+        )
+        self.pcwbs_mapping_frame.pack(fill="x", padx=10, pady=(5, 0))
+        self.pcwbs_mapping_frame.columnconfigure(1, weight=1)
+        self._file_row(
+            self.pcwbs_mapping_frame, 0, "Mapping Table", self.pcwbs_map_file, self.choose_pcwbs_map_file
+        )
+        tk.Label(self.pcwbs_mapping_frame, text="Mapping 시트").grid(row=1, column=0, sticky="w", pady=3)
+        self.pcwbs_map_sheet_combo = ttk.Combobox(
+            self.pcwbs_mapping_frame, textvariable=self.pcwbs_map_sheet, state="readonly", width=28
+        )
+        self.pcwbs_map_sheet_combo.grid(row=1, column=1, sticky="w", padx=6)
+        tk.Label(self.pcwbs_mapping_frame, text="헤더 행").grid(row=1, column=2, sticky="e")
+        tk.Entry(self.pcwbs_mapping_frame, textvariable=self.pcwbs_map_header_row, width=6).grid(
+            row=1, column=3, sticky="w", padx=4
+        )
+        tk.Button(
+            self.pcwbs_mapping_frame, text="Mapping Table 예시", command=self.show_pcwbs_mapping_example, width=16
+        ).grid(row=1, column=4, padx=4)
+        tk.Button(
+            self.pcwbs_mapping_frame, text="Mapping Table 불러오기", command=self.preview_pcwbs_mapping_table, width=18
+        ).grid(row=1, column=5, padx=4)
+        tk.Label(
+            self.pcwbs_mapping_frame, textvariable=self.pcwbs_map_info, fg="#1f4e79", anchor="w"
+        ).grid(row=2, column=0, columnspan=6, sticky="w", pady=(3, 0))
+
         key_frame = tk.LabelFrame(self.pcwbs_tab, text="비교키 생성 설정", padx=8, pady=6)
         key_frame.pack(fill="x", padx=10, pady=5)
+        self.pcwbs_key_frame = key_frame
         key_frame.columnconfigure(0, weight=1)
         key_frame.columnconfigure(1, weight=1)
 
@@ -1084,6 +1188,7 @@ class BmDmcsTool:
         ).grid(row=11, column=0, columnspan=2, sticky="w", pady=(3, 0))
 
         self.update_bm_key_mode_ui()
+        self.update_pcwbs_compare_method_ui()
 
         result_frame = tk.LabelFrame(self.pcwbs_tab, text="결과 표시 설정", padx=10, pady=8)
         result_frame.pack(fill="x", padx=10, pady=5)
@@ -1725,7 +1830,7 @@ class BmDmcsTool:
         except Exception as exc:
             self.log(traceback.format_exc())
             self.set_status("오류", "현재 작업: 중단", 0)
-            self.root.after(0, lambda: messagebox.showerror("오류", str(exc)))
+            self.root.after(0, lambda exc=exc: messagebox.showerror("오류", str(exc)))
         finally:
             self.set_running(False)
 
@@ -2188,7 +2293,7 @@ class BmDmcsTool:
             self.root.after(0, lambda: messagebox.showinfo("적용 건수 미리보기", "\n".join(lines)))
         except Exception as exc:
             self.log(traceback.format_exc())
-            self.root.after(0, lambda: messagebox.showerror("오류", str(exc)))
+            self.root.after(0, lambda exc=exc: messagebox.showerror("오류", str(exc)))
         finally:
             self.set_running(False)
 
@@ -2273,7 +2378,7 @@ class BmDmcsTool:
         except Exception as exc:
             self.log(traceback.format_exc())
             self.set_status("오류", "현재 작업: 중단", 0)
-            self.root.after(0, lambda: messagebox.showerror("오류", str(exc)))
+            self.root.after(0, lambda exc=exc: messagebox.showerror("오류", str(exc)))
         finally:
             self.set_running(False)
 
@@ -2300,6 +2405,275 @@ class BmDmcsTool:
             widget = getattr(self, name, None)
             if widget is not None:
                 widget.configure(state="normal" if use_mid else "disabled")
+
+    def _set_widgets_state(self, parent, enabled):
+        """Enable/disable every input widget inside a frame (recursively)."""
+        for child in parent.winfo_children():
+            try:
+                if isinstance(child, ttk.Combobox):
+                    child.configure(state="readonly" if enabled else "disabled")
+                elif isinstance(child, (tk.Entry, tk.Checkbutton, tk.Radiobutton, tk.Button, tk.Label)):
+                    child.configure(state="normal" if enabled else "disabled")
+            except tk.TclError:
+                pass
+            self._set_widgets_state(child, enabled)
+
+    def _use_mapping_table(self):
+        return self.pcwbs_compare_method.get() == COMPARE_METHOD_TABLE
+
+    def update_pcwbs_compare_method_ui(self):
+        """Only one of '비교키 생성 설정' and 'Mapping Table' is active at a time."""
+        if not hasattr(self, "pcwbs_key_frame") or not hasattr(self, "pcwbs_mapping_frame"):
+            return
+        use_table = self._use_mapping_table()
+        self._set_widgets_state(self.pcwbs_mapping_frame, use_table)
+        self._set_widgets_state(self.pcwbs_key_frame, not use_table)
+        if not use_table:
+            # 생성 방식(열 조합/MID)에 따라 일부 입력은 다시 비활성화
+            self.update_bm_key_mode_ui()
+
+    def choose_pcwbs_map_file(self):
+        path = filedialog.askopenfilename(
+            initialdir=str(self.project_root / "03_reference"),
+            filetypes=[("Excel files", "*.xlsx *.xlsm")],
+        )
+        if path:
+            self.pcwbs_map_file.set(path)
+            self._load_sheet_names_to_combo(path, self.pcwbs_map_sheet_combo, self.pcwbs_map_sheet)
+            self.preview_pcwbs_mapping_table()
+
+    def _normalize_mapping_value(self, value):
+        return self._normalize_component(value, "원문", "0")
+
+    @staticmethod
+    def _resolve_header(name, headers):
+        """Find the real header name for a (loosely written) column name."""
+        if name in headers:
+            return name
+        lookup = {canonical_header(header): header for header in headers}
+        return lookup.get(canonical_header(name))
+
+    def _load_key_mapping_table(self):
+        """
+        Read the Mapping Table.
+
+        Format (header row = '헤더 행'):
+            A열 헤더: 3D BM 열 이름 (예: SUBTITLE)
+            B열 헤더: PCWBS 열 이름 (예: Category4)
+            이후 행: A = 3D BM 값, B = 해당하는 PCWBS 값
+        """
+        path = Path(self.pcwbs_map_file.get().strip())
+        if not path.is_file():
+            raise ValueError("Mapping Table 파일을 선택하세요.")
+        try:
+            header_row = int(self.pcwbs_map_header_row.get().strip() or "1")
+        except ValueError as exc:
+            raise ValueError("Mapping Table 헤더 행은 1 이상의 정수여야 합니다.") from exc
+        if header_row < 1:
+            raise ValueError("Mapping Table 헤더 행은 1 이상의 정수여야 합니다.")
+
+        wb = load_workbook(path, read_only=True, data_only=True)
+        try:
+            sheet_name = self.pcwbs_map_sheet.get().strip() or wb.sheetnames[0]
+            if sheet_name not in wb.sheetnames:
+                raise ValueError(f"Mapping Table 시트를 찾을 수 없습니다: {sheet_name}")
+            ws = wb[sheet_name]
+            rows = ws.iter_rows(min_row=header_row, values_only=True)
+            header = list(next(rows, ()))
+            bm_column = clean_text(header[0]) if len(header) > 0 else ""
+            pcwbs_column = clean_text(header[1]) if len(header) > 1 else ""
+            if not bm_column or not pcwbs_column:
+                raise ValueError(
+                    "Mapping Table 헤더 행의 A열에 3D BM 열 이름, B열에 PCWBS 열 이름을 입력하세요."
+                )
+
+            mapping = {}
+            issues = []
+            pair_count = 0
+            for excel_row, values in enumerate(rows, start=header_row + 1):
+                bm_value = self._normalize_mapping_value(values[0] if len(values) > 0 else None)
+                pcwbs_value = self._normalize_mapping_value(values[1] if len(values) > 1 else None)
+                if not bm_value and not pcwbs_value:
+                    continue
+                if not bm_value or not pcwbs_value:
+                    issues.append({
+                        "Issue Type": "Mapping Table Blank",
+                        "Excel Row": excel_row,
+                        "Generated Key": bm_value or pcwbs_value,
+                        "Details": "A열 또는 B열 값이 비어 있어 제외함",
+                    })
+                    continue
+                targets = mapping.setdefault(bm_value, [])
+                if pcwbs_value not in targets:
+                    targets.append(pcwbs_value)
+                    pair_count += 1
+        finally:
+            wb.close()
+
+        return {
+            "bm_column": bm_column,
+            "pcwbs_column": pcwbs_column,
+            "map": mapping,
+            "pair_count": pair_count,
+            "issues": issues,
+        }
+
+    def _prepare_key_mapping(self, bm_headers, ref_headers, bm_label="3D BM"):
+        """Load the Mapping Table and resolve its column names against both files."""
+        table = self._load_key_mapping_table()
+        bm_column = self._resolve_header(table["bm_column"], bm_headers)
+        pcwbs_column = self._resolve_header(table["pcwbs_column"], ref_headers)
+        if not bm_column:
+            raise ValueError(
+                f"Mapping Table A열 헤더 '{table['bm_column']}' 열이 {bm_label} 파일에 없습니다.\n"
+                "3D BM 열 불러오기를 먼저 실행했는지, 열 이름이 맞는지 확인하세요."
+            )
+        if not pcwbs_column:
+            raise ValueError(
+                f"Mapping Table B열 헤더 '{table['pcwbs_column']}' 열이 PCWBS 기준 파일에 없습니다.\n"
+                "PCWBS 열 불러오기를 먼저 실행했는지, 열 이름이 맞는지 확인하세요."
+            )
+        table["bm_column"] = bm_column
+        table["pcwbs_column"] = pcwbs_column
+        self._active_key_mapping = table
+        return table
+
+    def _pcwbs_row_key(self, row, settings):
+        """PCWBS key for one row, using the selected comparison method."""
+        if self._use_mapping_table():
+            column = self._active_key_mapping["pcwbs_column"]
+            key = self._normalize_mapping_value(row.get(column))
+            return key, ("" if key else f"{column} 값이 비어 있음")
+        return self._build_custom_key(row, settings)
+
+    def _bm_row_mapped_keys(self, row):
+        """PCWBS keys that one 3D BM row points to through the Mapping Table."""
+        table = self._active_key_mapping
+        value = self._normalize_mapping_value(row.get(table["bm_column"]))
+        if not value:
+            return [], value, f"{table['bm_column']} 값이 비어 있음"
+        keys = table["map"].get(value, [])
+        if not keys:
+            return [], value, f"Mapping Table에 없는 3D BM 값: {value}"
+        return list(keys), value, ""
+
+    def preview_pcwbs_mapping_table(self):
+        try:
+            table = self._load_key_mapping_table()
+            self.pcwbs_map_info.set(
+                f"3D BM 열 '{table['bm_column']}' → PCWBS 열 '{table['pcwbs_column']}' / "
+                f"3D BM 값 {len(table['map']):,}개, 매핑 {table['pair_count']:,}건"
+                + (f" / 제외 {len(table['issues']):,}건" if table["issues"] else "")
+            )
+            self.log(f"Mapping Table 불러오기: {table['pair_count']:,}건")
+        except Exception as exc:
+            messagebox.showerror("오류", str(exc))
+
+    def show_pcwbs_mapping_example(self):
+        headers = ["SUBTITLE", "Category4"]
+        rows = [
+            ["4", "PIPE RACK (4300)"],
+            ["5", "PIPE RACK (4300)"],
+            ["12", "UTILITY AREA (5100)"],
+            ["AREA-21", "TANK FARM (6200)"],
+        ]
+        self._show_table_example(
+            title="Mapping Table 입력 예시",
+            subtitle=(
+                "비교키를 조합할 수 없을 때, 3D BM 값과 PCWBS 값을 1:1(또는 1:N)로 직접 연결하는 표입니다."
+            ),
+            note=(
+                "1행(헤더): A열 = 3D BM 열 이름, B열 = PCWBS 열 이름  (각 파일의 실제 열 이름과 같아야 함)\n"
+                "2행부터: A열 = 3D BM 값, B열 = 그 값에 해당하는 PCWBS 값\n"
+                "같은 3D BM 값을 여러 행에 쓰면 여러 PCWBS 값에 연결됩니다. 대소문자·앞뒤 공백은 무시합니다."
+            ),
+            headers=headers,
+            rows=rows,
+            file_name="PCWBS_Mapping_Table_Example.xlsx",
+            sheet_title="MAPPING",
+        )
+
+    def _show_table_example(self, title, subtitle, note, headers, rows, file_name, sheet_title):
+        """Create an example workbook and show it in a popup (same style as Painting Code 예시)."""
+        example_path = self.project_root / "03_reference" / file_name
+        wb = Workbook()
+        ws = wb.active
+        ws.title = sheet_title
+        ws.append(headers)
+        for row in rows:
+            ws.append(row)
+        style_header(ws)
+        auto_fit_columns(ws, min_width=18)
+        example_path.parent.mkdir(parents=True, exist_ok=True)
+        wb.save(example_path)
+
+        popup = tk.Toplevel(self.root)
+        popup.title(title)
+        popup.geometry("820x480")
+        popup.transient(self.root)
+        popup.grab_set()
+        popup.configure(bg=self.colors["background"])
+
+        header = tk.Frame(popup, bg=self.colors["navy"], padx=18, pady=12)
+        header.pack(fill="x")
+        tk.Label(
+            header, text=title, bg=self.colors["navy"], fg="#FFFFFF",
+            font=("Malgun Gothic", 15, "bold"), anchor="w",
+        ).pack(anchor="w")
+        tk.Label(
+            header, text=subtitle, bg=self.colors["navy"], fg="#D4E1EC",
+            font=("Malgun Gothic", 9), anchor="w", wraplength=780, justify="left",
+        ).pack(anchor="w", pady=(3, 0))
+
+        note_frame = tk.Frame(
+            popup, bg="#FFF8D8", padx=12, pady=9,
+            highlightbackground="#E8D792", highlightthickness=1,
+        )
+        note_frame.pack(fill="x", padx=14, pady=(12, 8))
+        tk.Label(
+            note_frame, text=note, bg="#FFF8D8", fg="#4B3D00",
+            font=("Malgun Gothic", 9, "bold"), anchor="w", justify="left", wraplength=760,
+        ).pack(fill="x")
+
+        table = tk.Frame(popup, bg="#FFFFFF", highlightbackground="#D4DAE1", highlightthickness=1)
+        table.pack(fill="both", expand=True, padx=14, pady=(0, 8))
+        column_labels = [get_column_letter(i) for i in range(1, len(headers) + 1)]
+        for column_no, letter in enumerate(column_labels):
+            tk.Label(
+                table, text=letter, bg="#E3E8ED", relief="solid", bd=1,
+                font=("Malgun Gothic", 9, "bold"), width=24,
+            ).grid(row=0, column=column_no, sticky="nsew")
+        for column_no, header_text in enumerate(headers):
+            tk.Label(
+                table, text=header_text, bg="#F4E6B1", fg="#111111", relief="solid", bd=1,
+                font=("Malgun Gothic", 9, "bold"), width=24, height=2,
+            ).grid(row=1, column=column_no, sticky="nsew")
+        for row_no, row_values in enumerate(rows, start=2):
+            for column_no, value in enumerate(row_values):
+                tk.Label(
+                    table, text=value, bg="#FFFFFF", fg="#111111", relief="solid", bd=1,
+                    font=("Malgun Gothic", 9), width=24,
+                ).grid(row=row_no, column=column_no, sticky="nsew")
+
+        button_bar = tk.Frame(popup, bg=self.colors["background"])
+        button_bar.pack(fill="x", padx=14, pady=(0, 12))
+
+        def open_example_excel():
+            try:
+                os.startfile(example_path)
+            except (AttributeError, OSError):
+                messagebox.showinfo("예시 파일 위치", str(example_path), parent=popup)
+
+        tk.Button(
+            button_bar, text="예시 Excel 열기", command=open_example_excel,
+            bg=self.colors["navy"], fg="#FFFFFF", activebackground=self.colors["navy_hover"],
+            activeforeground="#FFFFFF", relief="flat", bd=0, padx=16, pady=7, font=self.bold_font,
+        ).pack(side="left")
+        tk.Button(
+            button_bar, text="닫기", command=popup.destroy,
+            bg=self.colors["gray_button"], fg="#FFFFFF", activebackground=self.colors["gray_hover"],
+            activeforeground="#FFFFFF", relief="flat", bd=0, padx=16, pady=7, font=self.bold_font,
+        ).pack(side="right")
 
     def choose_pcwbs_bm_file(self):
         path = filedialog.askopenfilename(
@@ -2546,6 +2920,10 @@ class BmDmcsTool:
         if not result_column:
             raise ValueError("결과 열명을 입력하세요.")
 
+        if self._use_mapping_table():
+            self._prepare_key_mapping(self.pcwbs_bm_headers, self.pcwbs_ref_headers)
+            return bm_path, ref_path, bm_header_row, ref_header_row, result_column
+
         pcwbs_settings = self._enabled_component_settings(True)
         if not pcwbs_settings:
             raise ValueError("PCWBS 조합키 구성요소를 하나 이상 선택하세요.")
@@ -2590,19 +2968,24 @@ class BmDmcsTool:
             headers = make_unique_headers(list(header_values[:last_col]))
             needed = set()
             mode = self.pcwbs_bm_key_mode.get()
-            if mode in ["열 조합", "두 방식 교차검증"]:
+            use_table = self._use_mapping_table()
+            if use_table:
+                needed.add(self._active_key_mapping["bm_column"])
+            elif mode in ["열 조합", "두 방식 교차검증"]:
                 needed.update(
                     column
                     for column, _mode, _pad
                     in self._enabled_component_settings(False)
                 )
-            if mode in ["MID 텍스트 추출", "두 방식 교차검증"]:
+            if not use_table and mode in ["MID 텍스트 추출", "두 방식 교차검증"]:
                 needed.add(self.pcwbs_bm_iso.get())
             index_map = {header: idx for idx, header in enumerate(headers) if header in needed}
 
             subtitle_keys, iso_keys, custom_keys = set(), set(), set()
             key_counts = Counter()
             errors, mismatches = [], []
+            unmapped_counts = Counter()
+            unmapped_first_row = {}
             processed = 0
             estimated = max(ws.max_row - header_row, 1)
             for excel_row, values in enumerate(ws.iter_rows(min_row=header_row + 1, max_col=last_col, values_only=True), start=header_row + 1):
@@ -2610,6 +2993,19 @@ class BmDmcsTool:
                     continue
                 processed += 1
                 row = {header: values[idx] if idx < len(values) else None for header, idx in index_map.items()}
+                if use_table:
+                    # Mapping Table: 3D BM 값 → PCWBS 값 목록. 미등록 값은 값별로 한 번만 기록.
+                    mapped_keys, bm_value, error = self._bm_row_mapped_keys(row)
+                    for key in mapped_keys:
+                        subtitle_keys.add(key)
+                        key_counts[key] += 1
+                    if error:
+                        unmapped_counts[error] += 1
+                        unmapped_first_row.setdefault(error, (excel_row, bm_value))
+                    if processed % 5000 == 0:
+                        percent = 5 + min(35, (excel_row - header_row) / estimated * 35)
+                        self.set_status("PCWBS 비교 중", f"현재 작업: BM 키 계산 {processed:,}행", percent)
+                    continue
                 subtitle_key, iso_key, custom_key, error = self._build_bm_keys(row)
                 for key, target_set in [(subtitle_key, subtitle_keys), (iso_key, iso_keys), (custom_key, custom_keys)]:
                     if key:
@@ -2623,6 +3019,13 @@ class BmDmcsTool:
                     percent = 5 + min(35, (excel_row - header_row) / estimated * 35)
                     self.set_status("PCWBS 비교 중", f"현재 작업: BM 키 계산 {processed:,}행", percent)
                     self.log(f"BM 키 계산 진행: {processed:,}행")
+            for error, count in unmapped_counts.items():
+                first_row, bm_value = unmapped_first_row[error]
+                errors.append({
+                    "Excel Row": first_row,
+                    "Error": f"{error} ({count:,}행)",
+                    "Custom Key": bm_value,
+                })
             return processed, subtitle_keys, iso_keys, custom_keys, key_counts, errors, mismatches
         finally:
             wb.close()
@@ -2657,7 +3060,8 @@ class BmDmcsTool:
             bm_path, self.pcwbs_bm_sheet.get(), bm_header_row
         )
         mode = self.pcwbs_bm_key_mode.get()
-        if mode == "열 조합":
+        use_table = self._use_mapping_table()
+        if use_table or mode == "열 조합":
             active_keys = subtitle_keys
         elif mode == "MID 텍스트 추출":
             active_keys = iso_keys
@@ -2676,7 +3080,7 @@ class BmDmcsTool:
         unmatched_count = 0
 
         for idx, row in enumerate(ref_rows, start=1):
-            key, key_error = self._build_custom_key(row, settings)
+            key, key_error = self._pcwbs_row_key(row, settings)
             if key:
                 pcwbs_key_counts[key] += 1
             if key_error:
@@ -2739,12 +3143,21 @@ class BmDmcsTool:
             {
                 "Issue Type": "BM Key Mismatch",
                 "Excel Row": row.get("Excel Row", ""),
-                "Generated Key": f"{row.get('Subtitle-CIA Key', '')} / {row.get('ISO MID Key', '')}",
+                "Generated Key": f"{row.get('Column Combination Key', '')} / {row.get('MID Text Key', '')}",
                 "Details": "열 조합 키와 MID 텍스트 추출 키가 서로 다름",
             }
             for row in bm_key_mismatches
         ]
         issue_rows = key_error_rows + duplicate_rows + bm_duplicate_rows + bm_error_issue_rows + mismatch_issue_rows
+        if use_table:
+            issue_rows = self._active_key_mapping["issues"] + issue_rows
+            mode = (
+                f"Mapping Table ({self._active_key_mapping['bm_column']} → "
+                f"{self._active_key_mapping['pcwbs_column']})"
+            )
+            key_components = f"Mapping Table: {self.pcwbs_map_file.get()}"
+        else:
+            key_components = " | ".join(f"{c}:{m}:pad{p}" for c, m, p in settings)
 
         summary = {
             "BM Rows": bm_count,
@@ -2755,7 +3168,7 @@ class BmDmcsTool:
             "Issue Count": len(issue_rows),
             "Result Column": result_column,
             "BM Key Mode": mode,
-            "PCWBS Key Components": " | ".join(f"{c}:{m}:pad{p}" for c, m, p in settings),
+            "PCWBS Key Components": key_components,
         }
         return {
             "ref_headers": ref_headers,
@@ -2793,7 +3206,7 @@ class BmDmcsTool:
         except Exception as exc:
             self.log(traceback.format_exc())
             self.set_status("오류", "현재 작업: 중단", 0)
-            self.root.after(0, lambda: messagebox.showerror("오류", str(exc)))
+            self.root.after(0, lambda exc=exc: messagebox.showerror("오류", str(exc)))
         finally:
             self.set_running(False)
 
@@ -2852,7 +3265,7 @@ class BmDmcsTool:
         except Exception as exc:
             self.log(traceback.format_exc())
             self.set_status("오류", "현재 작업: 중단", 0)
-            self.root.after(0, lambda: messagebox.showerror("오류", str(exc)))
+            self.root.after(0, lambda exc=exc: messagebox.showerror("오류", str(exc)))
         finally:
             self.set_running(False)
 
@@ -2881,12 +3294,12 @@ class BmDmcsTool:
         file_frame.pack(fill="x", padx=10, pady=(10, 5))
         file_frame.columnconfigure(1, weight=1)
         self._file_row(file_frame, 0, "수정 완료 3D BM", self.display_bm_file, self.choose_display_bm_file)
-        tk.Label(file_frame, text="BM 시트").grid(row=1, column=0, sticky="w", pady=4)
+        tk.Label(file_frame, text="3D BM 시트").grid(row=1, column=0, sticky="w", pady=4)
         self.display_bm_sheet_combo = ttk.Combobox(file_frame, textvariable=self.display_bm_sheet, state="readonly", width=28)
         self.display_bm_sheet_combo.grid(row=1, column=1, sticky="w", padx=6)
         tk.Label(file_frame, text="헤더 행").grid(row=1, column=2, sticky="e")
         tk.Entry(file_frame, textvariable=self.display_bm_header_row, width=7).grid(row=1, column=3, padx=5)
-        tk.Button(file_frame, text="BM 열 불러오기", command=self.load_display_bm_columns, width=15).grid(row=1, column=4, padx=5)
+        tk.Button(file_frame, text="3D BM 열 불러오기", command=self.load_display_bm_columns, width=17).grid(row=1, column=4, padx=5)
         self._file_row(file_frame, 2, "결과 파일", self.display_output_file, self.choose_display_output_file, save=True)
 
         pcwbs_map_frame = tk.LabelFrame(
@@ -2901,7 +3314,7 @@ class BmDmcsTool:
         tk.Label(
             pcwbs_map_frame,
             text=(
-                "PCWBS 기준 파일·시트·조합키와 3D BM 비교키는 "
+                "PCWBS 기준 파일·시트와 비교 방식(비교키 생성 설정 또는 Mapping Table)은 "
                 "3번 'PCWBS 비교' 탭의 현재 설정을 그대로 사용합니다."
             ),
             anchor="w",
@@ -2984,7 +3397,7 @@ class BmDmcsTool:
         edit_frame.grid_columnconfigure(3, weight=1)
 
         self.display_selected_header = tk.StringVar(value="")
-        self.display_mapping_mode = tk.StringVar(value="BM 열 복사")
+        self.display_mapping_mode = tk.StringVar(value="3D BM 열 복사")
         self.display_mapping_source = tk.StringVar(value="")
 
         tk.Label(edit_frame, text="Display Format 열").grid(
@@ -3026,7 +3439,7 @@ class BmDmcsTool:
             self.on_display_mapping_mode_change,
         )
 
-        tk.Label(edit_frame, text="BM 열 또는 값").grid(
+        tk.Label(edit_frame, text="3D BM 열 또는 값").grid(
             row=1,
             column=0,
             sticky="w",
@@ -3075,6 +3488,17 @@ class BmDmcsTool:
             padx=(4, 0),
         )
 
+        self.display_mode_help = tk.StringVar(value="")
+        tk.Label(
+            edit_frame,
+            textvariable=self.display_mode_help,
+            fg="#1f4e79",
+            anchor="w",
+            justify="left",
+            wraplength=1100,
+        ).grid(row=2, column=0, columnspan=6, sticky="w", pady=(6, 0))
+        self._update_display_mode_help()
+
 
         body = tk.Frame(self.display_tab)
         body.pack(fill="both", expand=True, padx=10, pady=(4, 3))
@@ -3099,7 +3523,7 @@ class BmDmcsTool:
         for col, title, width in [
             ("display", "Display Format 열", 230),
             ("mode", "입력 방식", 150),
-            ("source", "BM 열 또는 값", 300),
+            ("source", "3D BM 열 또는 값", 300),
         ]:
             self.display_map_tree.heading(col, text=title)
             self.display_map_tree.column(col, width=width, anchor="w")
@@ -3163,7 +3587,7 @@ class BmDmcsTool:
     def reset_display_mappings(self):
         self.display_mappings = {}
         for header in DISPLAY_FORMAT_HEADERS:
-            mode, source = DISPLAY_DEFAULT_MODES.get(header, ("BM 열 복사", header))
+            mode, source = DISPLAY_DEFAULT_MODES.get(header, ("3D BM 열 복사", header))
             self.display_mappings[header] = {"mode": mode, "source": source}
         if hasattr(self, "display_map_tree"):
             self.refresh_display_mapping_tree()
@@ -3242,7 +3666,7 @@ class BmDmcsTool:
                 continue
             key = canonical_header(target)
             if key in lookup:
-                self.display_mappings[target] = {"mode": "BM 열 복사", "source": lookup[key]}
+                self.display_mappings[target] = {"mode": "3D BM 열 복사", "source": lookup[key]}
         # common aliases
         aliases = {
             "Drawing Number": ["DRAWING NUMBER", "Drawing Number", "DWG Number"],
@@ -3259,7 +3683,7 @@ class BmDmcsTool:
             for candidate in candidates:
                 found = lookup.get(canonical_header(candidate))
                 if found:
-                    self.display_mappings[target] = {"mode": "BM 열 복사", "source": found}
+                    self.display_mappings[target] = {"mode": "3D BM 열 복사", "source": found}
                     break
         self.refresh_display_mapping_tree()
 
@@ -3284,6 +3708,20 @@ class BmDmcsTool:
             self.display_source_combo.configure(state="disabled")
         else:
             self.display_source_combo.configure(state="normal")
+        self._update_display_mode_help()
+
+    def _update_display_mode_help(self):
+        """Explain the selected input mode below the mapping editor."""
+        if not hasattr(self, "display_mode_help"):
+            return
+        mode = self.display_mapping_mode.get()
+        header = self.display_selected_header.get()
+        text = f"[{mode}] " + MAPPING_MODE_HELP.get(mode, "")
+        if mode == "특수규칙" and header and header not in SPECIAL_RULE_HEADERS:
+            text += f"\n※ '{header}' 열에는 특수규칙이 없습니다. Part 또는 Unit Size 열에서만 선택하세요."
+        if mode == "PCWBS 파일 매핑" and header and not header.startswith("Category"):
+            text += f"\n※ '{header}' 열은 PCWBS 파일 매핑 대상이 아닙니다."
+        self.display_mode_help.set(text)
 
     def apply_display_mapping(self):
         header = self.display_selected_header.get()
@@ -3291,6 +3729,19 @@ class BmDmcsTool:
             return
         mode = self.display_mapping_mode.get()
         source = self.display_mapping_source.get()
+        if mode == "특수규칙" and header not in SPECIAL_RULE_HEADERS:
+            messagebox.showwarning(
+                "안내",
+                f"특수규칙은 {', '.join(SPECIAL_RULE_HEADERS)} 열에서만 사용할 수 있습니다.\n"
+                f"'{header}' 열은 다른 입력 방식을 선택하세요.",
+            )
+            return
+        if mode == "PCWBS 파일 매핑" and not header.startswith("Category"):
+            messagebox.showwarning(
+                "안내",
+                "PCWBS 파일 매핑은 Category1~10 열에서만 사용할 수 있습니다.",
+            )
+            return
         if mode in ["빈칸", "자동번호", "특수규칙"]:
             source = ""
         self.display_mappings[header] = {
@@ -3360,11 +3811,13 @@ class BmDmcsTool:
             return
         config = json.loads(Path(path).read_text(encoding="utf-8"))
         self.display_mappings = config.get("mappings", self.display_mappings)
+        for mapping in self.display_mappings.values():
+            mapping["mode"] = LEGACY_MAPPING_MODES.get(mapping.get("mode"), mapping.get("mode"))
         if config.get("use_pcwbs_mapping", False):
             for number in range(1, 6):
                 header = f"Category{number}"
                 current = self.display_mappings.get(header, {})
-                if current.get("mode") == "BM 열 복사":
+                if current.get("mode") == "3D BM 열 복사":
                     self.display_mappings[header] = {
                         "mode": "PCWBS 파일 매핑",
                         "source": header,
@@ -3433,6 +3886,14 @@ class BmDmcsTool:
 
     def _validate_display_key_settings(self):
         """Validate tab 3 key settings for Display Category mapping."""
+        if self._use_mapping_table():
+            self._prepare_key_mapping(
+                self.display_bm_headers,
+                self.pcwbs_ref_headers,
+                bm_label="4번 탭 입력 3D BM",
+            )
+            return
+
         pcwbs_settings = self._enabled_component_settings(True)
         if not pcwbs_settings:
             raise ValueError("3번 탭에서 PCWBS 조합키 구성요소를 하나 이상 선택하세요.")
@@ -3503,7 +3964,7 @@ class BmDmcsTool:
         issues = []
 
         for row in ref_rows:
-            key, error = self._build_custom_key(row, settings)
+            key, error = self._pcwbs_row_key(row, settings)
             if error or not key:
                 issues.append({
                     "Issue Type": "PCWBS Key Error",
@@ -3530,9 +3991,15 @@ class BmDmcsTool:
                     ),
                 })
 
+        if self._use_mapping_table():
+            issues = self._active_key_mapping["issues"] + issues
         return category_map, issues
 
     def _candidate_bm_keys_for_mapping(self, row):
+        if self._use_mapping_table():
+            keys, _bm_value, error = self._bm_row_mapped_keys(row)
+            return keys, error
+
         combination_key, mid_key, _legacy_key, error = self._build_bm_keys(row)
         mode = self.pcwbs_bm_key_mode.get()
         if mode == "열 조합":
@@ -3602,13 +4069,16 @@ class BmDmcsTool:
             mapping = self.display_mappings.get(header, {"mode": "빈칸", "source": ""})
             mode = mapping["mode"]
             source = mapping["source"]
-            if header == "NO" or mode == "자동번호":
+            if mode == "자동번호":
                 value = number
-            elif header == "Part":
-                value = self._part_value_for_row(row)
-            elif header == "Unit Size":
-                value = self._unit_value_for_row(row)
-            elif mode == "BM 열 복사":
+            elif mode == "특수규칙":
+                if header == "Part":
+                    value = self._part_value_for_row(row)
+                elif header == "Unit Size":
+                    value = self._unit_value_for_row(row)
+                else:
+                    value = None
+            elif mode == "3D BM 열 복사":
                 value = row.get(source)
             elif mode == "PCWBS 파일 매핑":
                 value = None
@@ -3661,7 +4131,7 @@ class BmDmcsTool:
         count = 0
         missing_sources = set()
         for header, mapping in self.display_mappings.items():
-            if mapping["mode"] == "BM 열 복사" and mapping["source"] not in self.display_bm_headers:
+            if mapping["mode"] == "3D BM 열 복사" and mapping["source"] not in self.display_bm_headers:
                 missing_sources.add(mapping["source"])
 
         category_map = {}
@@ -3731,7 +4201,7 @@ class BmDmcsTool:
             self.set_status("완료", "현재 작업: 없음", 100)
         except Exception as exc:
             self.log(traceback.format_exc())
-            self.root.after(0, lambda: messagebox.showerror("오류", str(exc)))
+            self.root.after(0, lambda exc=exc: messagebox.showerror("오류", str(exc)))
         finally:
             self.set_running(False)
 
@@ -3835,7 +4305,7 @@ class BmDmcsTool:
             )
         except Exception as exc:
             self.log(traceback.format_exc())
-            self.root.after(0, lambda: messagebox.showerror("오류", str(exc)))
+            self.root.after(0, lambda exc=exc: messagebox.showerror("오류", str(exc)))
         finally:
             self.set_running(False)
 
@@ -3861,9 +4331,11 @@ class BmDmcsTool:
         self.paint_line_no_col = tk.StringVar(value="")
         self.paint_operating_temp_col = tk.StringVar(value="")
         self.paint_max_operating_temp_col = tk.StringVar(value="")
-        self.paint_line_match_mode = tk.StringVar(
-            value="Display 끝 Sheet No. 제거 후 일치"
-        )
+        self.paint_line_match_mode = tk.StringVar(value=LINE_MATCH_STRIP_SHEET)
+        self.paint_sheet_separator = tk.StringVar(value="-")
+        self.paint_ins_temp_source = tk.StringVar(value=INS_TEMP_SOURCE_LINE)
+        self.paint_ins_rule_file = tk.StringVar(value="")
+        self.paint_ins_rule_sheet = tk.StringVar(value="")
         self.paint_selected_header_text = tk.StringVar(
             value="선택한 열의 전체명이 여기에 표시됩니다."
         )
@@ -4014,136 +4486,191 @@ class BmDmcsTool:
             self.paint_tab,
             text="열 매핑 및 온도 정규화",
             padx=8,
-            pady=7,
+            pady=5,
         )
         map_frame.pack(fill="x", padx=10, pady=4)
-        map_frame.grid_columnconfigure(1, weight=1)
-        map_frame.grid_columnconfigure(3, weight=1)
+        for column_no in range(3):
+            map_frame.grid_columnconfigure(column_no, weight=1, uniform="paint_map")
 
         self.paint_display_combos = []
         self.paint_line_combos = []
 
-        display_specs = [
-            ("Display Drawing Number", self.paint_drawing_col),
-            ("Display Class", self.paint_class_col),
-            ("Display Insulation Symbol", self.paint_insulation_col),
-        ]
-        for row_no, (label, variable) in enumerate(display_specs):
-            tk.Label(map_frame, text=label).grid(
-                row=row_no,
-                column=0,
-                sticky="e",
-                padx=4,
-                pady=3,
+        def add_combo_row(parent, row_no, label, variable, combo_list, width=30):
+            tk.Label(parent, text=label).grid(
+                row=row_no, column=0, sticky="e", padx=(0, 4), pady=2
             )
             combo = ttk.Combobox(
-                map_frame,
+                parent,
                 textvariable=variable,
                 state="readonly",
-                width=48,
+                width=width,
             )
-            combo.grid(
-                row=row_no,
-                column=1,
-                sticky="ew",
-                padx=4,
-                pady=3,
-            )
+            combo.grid(row=row_no, column=1, sticky="ew", padx=(0, 4), pady=2)
             combo.bind(
                 "<<ComboboxSelected>>",
                 lambda _event, var=variable: self.show_paint_header_full_name(
                     var.get()
                 ),
             )
-            self.paint_display_combos.append(combo)
+            combo_list.append(combo)
+            return combo
 
-        line_specs = [
-            ("Line List Line No.", self.paint_line_no_col),
-            ("Operating Temp.", self.paint_operating_temp_col),
-            ("Maximum Operating Temp.", self.paint_max_operating_temp_col),
-        ]
-        for row_no, (label, variable) in enumerate(line_specs):
-            tk.Label(map_frame, text=label).grid(
-                row=row_no,
-                column=2,
-                sticky="e",
-                padx=(14, 4),
-                pady=3,
-            )
-            combo = ttk.Combobox(
-                map_frame,
-                textvariable=variable,
-                state="readonly",
-                width=58,
-            )
-            combo.grid(
-                row=row_no,
-                column=3,
-                sticky="ew",
-                padx=4,
-                pady=3,
-            )
-            combo.bind(
-                "<<ComboboxSelected>>",
-                lambda _event, var=variable: self.show_paint_header_full_name(
-                    var.get()
-                ),
-            )
-            self.paint_line_combos.append(combo)
-
-        tk.Label(map_frame, text="Line No. 매칭 방식").grid(
-            row=3,
-            column=0,
-            sticky="e",
-            padx=4,
+        # ---- 공통: Display Drawing Number ↔ Line List Line No. 매칭
+        common_frame = tk.LabelFrame(
+            map_frame,
+            text="공통 · Line List 매칭",
+            padx=6,
             pady=4,
+        )
+        common_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
+        common_frame.grid_columnconfigure(1, weight=1)
+        add_combo_row(
+            common_frame, 0, "Display Drawing Number",
+            self.paint_drawing_col, self.paint_display_combos,
+        )
+        add_combo_row(
+            common_frame, 1, "Line List Line No.",
+            self.paint_line_no_col, self.paint_line_combos,
+        )
+        tk.Label(common_frame, text="Line No. 매칭 방식").grid(
+            row=2, column=0, sticky="e", padx=(0, 4), pady=2
         )
         self.paint_line_match_combo = ttk.Combobox(
-            map_frame,
+            common_frame,
             textvariable=self.paint_line_match_mode,
-            values=[
-                "완전 일치",
-                "Display 끝 Sheet No. 제거 후 일치",
-                "Display 값에 Line No. 포함",
-                "Line No. 값에 Display 값 포함",
-            ],
+            values=LINE_MATCH_MODES,
             state="readonly",
-            width=36,
+            width=30,
         )
-        self.paint_line_match_combo.grid(
-            row=3,
-            column=1,
-            sticky="w",
-            padx=4,
-            pady=4,
+        self.paint_line_match_combo.grid(row=2, column=1, sticky="ew", pady=2)
+        self.paint_line_match_combo.bind(
+            "<<ComboboxSelected>>",
+            lambda _event: self.show_paint_header_full_name(
+                self.paint_line_match_mode.get()
+            ),
         )
+        sheet_frame = tk.Frame(common_frame)
+        sheet_frame.grid(row=3, column=0, columnspan=2, sticky="w", pady=2)
+        tk.Label(sheet_frame, text="Sh't No. 구분자").pack(side="left")
+        tk.Entry(
+            sheet_frame,
+            textvariable=self.paint_sheet_separator,
+            width=4,
+        ).pack(side="left", padx=4)
+        tk.Label(
+            sheet_frame,
+            text="예: 304-PW-0051-01 → 304-PW-0051",
+            fg="#555555",
+        ).pack(side="left", padx=4)
 
-        tk.Label(map_frame, text="AMB 대체 온도").grid(
-            row=3,
-            column=2,
-            sticky="e",
-            padx=(14, 4),
+        # ---- ① Insulation Temperature → Display 'Insulation Temp (Operating Temp)' 열
+        insulation_temp_frame = tk.LabelFrame(
+            map_frame,
+            text="① Insulation Temperature (→ Insulation Temp 열)",
+            padx=6,
             pady=4,
+        )
+        insulation_temp_frame.grid(row=0, column=1, sticky="nsew", padx=4)
+        insulation_temp_frame.grid_columnconfigure(1, weight=1)
+        tk.Label(insulation_temp_frame, text="온도 입력 방식").grid(
+            row=0, column=0, sticky="e", padx=(0, 4), pady=2
+        )
+        self.paint_ins_source_combo = ttk.Combobox(
+            insulation_temp_frame,
+            textvariable=self.paint_ins_temp_source,
+            values=INS_TEMP_SOURCES,
+            state="readonly",
+            width=30,
+        )
+        self.paint_ins_source_combo.grid(row=0, column=1, sticky="ew", pady=2)
+        self.paint_ins_source_combo.bind(
+            "<<ComboboxSelected>>",
+            lambda _event: self.update_insulation_temp_source_ui(),
+        )
+        self.paint_ins_temp_combo = add_combo_row(
+            insulation_temp_frame, 1, "Insulation 적용 Temp.",
+            self.paint_operating_temp_col, self.paint_line_combos,
+        )
+        tk.Label(insulation_temp_frame, text="온도 규칙 파일").grid(
+            row=2, column=0, sticky="e", padx=(0, 4), pady=2
+        )
+        rule_file_frame = tk.Frame(insulation_temp_frame)
+        rule_file_frame.grid(row=2, column=1, sticky="ew", pady=2)
+        rule_file_frame.grid_columnconfigure(0, weight=1)
+        self.paint_ins_rule_entry = tk.Entry(
+            rule_file_frame,
+            textvariable=self.paint_ins_rule_file,
+        )
+        self.paint_ins_rule_entry.grid(row=0, column=0, sticky="ew")
+        self.paint_ins_rule_button = tk.Button(
+            rule_file_frame,
+            text="파일 선택",
+            command=self.choose_paint_ins_rule_file,
+        )
+        self.paint_ins_rule_button.grid(row=0, column=1, padx=(4, 0))
+        rule_sheet_frame = tk.Frame(insulation_temp_frame)
+        rule_sheet_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=2)
+        tk.Label(rule_sheet_frame, text="규칙 시트").pack(side="left")
+        self.paint_ins_rule_sheet_combo = ttk.Combobox(
+            rule_sheet_frame,
+            textvariable=self.paint_ins_rule_sheet,
+            state="readonly",
+            width=16,
+        )
+        self.paint_ins_rule_sheet_combo.pack(side="left", padx=4)
+        tk.Button(
+            rule_sheet_frame,
+            text="규칙 파일 예시",
+            command=self.show_insulation_temp_rule_example,
+        ).pack(side="left", padx=4)
+        tk.Label(insulation_temp_frame, text="AMB 대체 온도").grid(
+            row=4, column=0, sticky="e", padx=(0, 4), pady=2
         )
         tk.Entry(
-            map_frame,
+            insulation_temp_frame,
             textvariable=self.paint_ambient_temp,
-            width=12,
-        ).grid(row=3, column=3, sticky="w", padx=4)
+            width=8,
+        ).grid(row=4, column=1, sticky="w", pady=2)
+
+        # ---- ② Paint Code → Display 'Paint Symbol' 열
+        paint_code_frame = tk.LabelFrame(
+            map_frame,
+            text="② Paint Code (→ Paint Symbol 열)",
+            padx=6,
+            pady=4,
+        )
+        paint_code_frame.grid(row=0, column=2, sticky="nsew", padx=(4, 0))
+        paint_code_frame.grid_columnconfigure(1, weight=1)
+        add_combo_row(
+            paint_code_frame, 0, "Display Class",
+            self.paint_class_col, self.paint_display_combos,
+        )
+        add_combo_row(
+            paint_code_frame, 1, "Display Insulation Symbol",
+            self.paint_insulation_col, self.paint_display_combos,
+        )
+        add_combo_row(
+            paint_code_frame, 2, "Painting 적용 Temp.",
+            self.paint_max_operating_temp_col, self.paint_line_combos,
+        )
+        tk.Label(
+            paint_code_frame,
+            text="Painting Code Table은 위 '입력 및 결과 파일'에서 선택",
+            fg="#555555",
+        ).grid(row=3, column=0, columnspan=2, sticky="w", pady=2)
 
         full_name_frame = tk.LabelFrame(
             map_frame,
             text="선택 열 전체명",
             padx=6,
-            pady=4,
+            pady=2,
         )
         full_name_frame.grid(
-            row=4,
+            row=1,
             column=0,
-            columnspan=4,
+            columnspan=3,
             sticky="ew",
-            padx=4,
-            pady=(5, 3),
+            pady=(5, 2),
         )
         tk.Label(
             full_name_frame,
@@ -4157,19 +4684,22 @@ class BmDmcsTool:
         tk.Label(
             map_frame,
             text=(
-                "Operating Temp.는 W열에 입력하고, Paint Symbol 계산에는 "
-                "Maximum Operating Temp.를 사용합니다. 복수 숫자는 가장 큰 값을 적용합니다."
+                "Insulation 적용 Temp. / Painting 적용 Temp.에는 프로젝트 기준에 따라 Line List의 "
+                "Operating / Max. Operating / Design Temp. 중 원하는 열을 선택하세요. "
+                "복수 숫자는 가장 큰 값을 적용합니다."
             ),
             fg="#555555",
             anchor="w",
+            justify="left",
+            wraplength=1220,
         ).grid(
-            row=5,
+            row=2,
             column=0,
-            columnspan=4,
+            columnspan=3,
             sticky="w",
-            padx=4,
-            pady=(3, 0),
+            pady=(2, 0),
         )
+        self.update_insulation_temp_source_ui()
 
         rule_body = tk.Frame(self.paint_tab)
         rule_body.pack(fill="both", expand=True, padx=10, pady=4)
@@ -4179,7 +4709,7 @@ class BmDmcsTool:
 
         material_frame = tk.LabelFrame(
             rule_body,
-            text="Class → Material Group 규칙",
+            text="② Paint Code · Class → Material Group 규칙",
             padx=6,
             pady=6,
         )
@@ -4233,7 +4763,7 @@ class BmDmcsTool:
 
         insulation_frame = tk.LabelFrame(
             rule_body,
-            text="Insulation Symbol → Paint Suffix 규칙",
+            text="② Paint Code · Insulation Symbol → Paint Suffix 규칙",
             padx=6,
             pady=6,
         )
@@ -4333,17 +4863,21 @@ class BmDmcsTool:
         )
 
     @staticmethod
-    def _remove_display_sheet_suffix(value):
+    def _remove_display_sheet_suffix(value, separator="-"):
         """
-        Remove the final sheet-number segment from a Display Drawing Number.
+        Remove the Sh't No. (text after the last separator) from a Display Drawing Number.
 
         Example:
             304-PW-0051-01 -> 304-PW-0051
+            304-PW-0051-A1 -> 304-PW-0051
         """
         normalized = clean_text(value)
         if not normalized:
             return ""
-        return re.sub(r"-\d+\s*$", "", normalized).strip()
+        separator = separator or "-"
+        if separator not in normalized:
+            return normalized
+        return normalized.rsplit(separator, 1)[0].strip()
 
     def _match_line_record(
         self,
@@ -4360,6 +4894,7 @@ class BmDmcsTool:
         """
         cache_key = (
             self.paint_line_match_mode.get(),
+            self.paint_sheet_separator.get(),
             clean_text(drawing_number),
         )
         if cache_key in match_cache:
@@ -4368,9 +4903,12 @@ class BmDmcsTool:
         mode = self.paint_line_match_mode.get()
         display_key = self._normalize_line_key(drawing_number)
 
-        if mode == "Display 끝 Sheet No. 제거 후 일치":
+        if mode == LINE_MATCH_STRIP_SHEET:
             display_key = self._normalize_line_key(
-                self._remove_display_sheet_suffix(drawing_number)
+                self._remove_display_sheet_suffix(
+                    drawing_number,
+                    self.paint_sheet_separator.get(),
+                )
             )
 
         if not display_key:
@@ -4378,7 +4916,7 @@ class BmDmcsTool:
             match_cache[cache_key] = result
             return result
 
-        if mode in ["완전 일치", "Display 끝 Sheet No. 제거 후 일치"]:
+        if mode in [LINE_MATCH_EXACT, LINE_MATCH_STRIP_SHEET]:
             record = line_map.get(display_key)
             result = (
                 record,
@@ -4388,7 +4926,7 @@ class BmDmcsTool:
             match_cache[cache_key] = result
             return result
 
-        if mode == "Display 값에 Line No. 포함":
+        if mode == LINE_MATCH_DISPLAY_CONTAINS:
             matches = [
                 key
                 for key in sorted_line_keys
@@ -4435,6 +4973,131 @@ class BmDmcsTool:
         match_cache[cache_key] = result
         return result
 
+    def _ins_temp_uses_rule_file(self):
+        return self.paint_ins_temp_source.get() in [
+            INS_TEMP_SOURCE_RULE,
+            INS_TEMP_SOURCE_RULE_FIRST,
+        ]
+
+    def _ins_temp_uses_line_list(self):
+        return self.paint_ins_temp_source.get() in [
+            INS_TEMP_SOURCE_LINE,
+            INS_TEMP_SOURCE_RULE_FIRST,
+        ]
+
+    def update_insulation_temp_source_ui(self):
+        """Enable only the inputs used by the selected Insulation Temp. source."""
+        if not hasattr(self, "paint_ins_temp_combo"):
+            return
+        self.paint_ins_temp_combo.configure(
+            state="readonly" if self._ins_temp_uses_line_list() else "disabled"
+        )
+        use_rule = self._ins_temp_uses_rule_file()
+        self.paint_ins_rule_entry.configure(state="normal" if use_rule else "disabled")
+        self.paint_ins_rule_button.configure(state="normal" if use_rule else "disabled")
+        self.paint_ins_rule_sheet_combo.configure(
+            state="readonly" if use_rule else "disabled"
+        )
+
+    def choose_paint_ins_rule_file(self):
+        path = filedialog.askopenfilename(
+            initialdir=str(self.project_root / "03_reference"),
+            filetypes=[("Excel", "*.xlsx *.xlsm")],
+        )
+        if path:
+            self.paint_ins_rule_file.set(path)
+            self._load_sheet_names_to_combo(
+                path,
+                self.paint_ins_rule_sheet_combo,
+                self.paint_ins_rule_sheet,
+            )
+
+    def show_insulation_temp_rule_example(self):
+        self._show_table_example(
+            title="Insulation Temperature 규칙 파일 예시",
+            subtitle=(
+                "Display Format의 열 값(Fluid, Class 등)에 따라 Insulation Temp를 일괄 입력하는 규칙 파일입니다."
+            ),
+            note=(
+                "1행은 제목(자유롭게 작성), 2행부터 규칙을 입력합니다. 위에서부터 처음 일치한 규칙을 적용합니다.\n"
+                "A열 = Display Format 열 이름(예: Fluid, Class)  /  B열 = 그 열의 값(정확히 일치, 대소문자 무시, "
+                "'*' = 모든 값)  /  C열 = 입력할 온도 (숫자, 범위, AMB 가능)"
+            ),
+            headers=["Display Format 열", "값", "Insulation Temp"],
+            rows=[
+                ["Fluid", "SC", "180"],
+                ["Fluid", "HW", "95"],
+                ["Class", "A1C", "AMB"],
+                ["Fluid", "*", "60"],
+            ],
+            file_name="Insulation_Temp_Rule_Example.xlsx",
+            sheet_title="INS TEMP RULE",
+        )
+
+    def _load_insulation_temp_rules(self, display_headers, ambient_temperature):
+        """
+        Read the Insulation Temp. rule file.
+
+        A: Display Format column, B: value ('*' = any), C: temperature.
+        Returns a list of (display_column, value_casefold, temperature, excel_row).
+        """
+        path = Path(self.paint_ins_rule_file.get().strip())
+        if not path.is_file():
+            raise ValueError("Insulation Temp 규칙 파일을 선택하세요.")
+
+        wb = load_workbook(path, read_only=True, data_only=True)
+        try:
+            sheet_name = self.paint_ins_rule_sheet.get().strip() or wb.sheetnames[0]
+            if sheet_name not in wb.sheetnames:
+                raise ValueError(f"Insulation Temp 규칙 시트를 찾을 수 없습니다: {sheet_name}")
+            ws = wb[sheet_name]
+            rules = []
+            errors = []
+            for excel_row, values in enumerate(
+                ws.iter_rows(min_row=2, values_only=True),
+                start=2,
+            ):
+                values = list(values) + [None] * (3 - len(values))
+                column_name = clean_text(values[0])
+                if not column_name and is_effectively_empty_row(values[:3]):
+                    continue
+                display_column = self._resolve_header(column_name, display_headers)
+                if not display_column:
+                    errors.append(f"{excel_row}행: Display Format에 '{column_name}' 열이 없음")
+                    continue
+                temperature, _status, original = self._normalize_temperature(
+                    values[2],
+                    ambient_temperature,
+                )
+                if temperature is None:
+                    errors.append(f"{excel_row}행: 온도값 오류 ('{original}')")
+                    continue
+                rules.append((
+                    display_column,
+                    clean_text(values[1]).casefold(),
+                    temperature,
+                    excel_row,
+                ))
+        finally:
+            wb.close()
+
+        if errors:
+            raise ValueError(
+                "Insulation Temp 규칙 파일을 확인하세요:\n" + "\n".join(errors[:20])
+            )
+        if not rules:
+            raise ValueError("Insulation Temp 규칙 파일에 규칙이 없습니다. (2행부터 입력)")
+        return rules
+
+    @staticmethod
+    def _insulation_temp_from_rules(row_values, header_index, rules):
+        """Return (temperature, rule_excel_row) of the first matching rule."""
+        for display_column, rule_value, temperature, excel_row in rules:
+            cell = clean_text(row_values[header_index[display_column]]).casefold()
+            if rule_value == "*" or cell == rule_value:
+                return temperature, excel_row
+        return None, None
+
     def _temperature_painting_rule_config(self):
         return {
             "display_sheet": self.paint_display_sheet.get(),
@@ -4449,6 +5112,10 @@ class BmDmcsTool:
             "operating_temp_column": self.paint_operating_temp_col.get(),
             "maximum_operating_temp_column": self.paint_max_operating_temp_col.get(),
             "line_match_mode": self.paint_line_match_mode.get(),
+            "sheet_separator": self.paint_sheet_separator.get(),
+            "insulation_temp_source": self.paint_ins_temp_source.get(),
+            "insulation_temp_rule_file": self.paint_ins_rule_file.get(),
+            "insulation_temp_rule_sheet": self.paint_ins_rule_sheet.get(),
             "ambient_temperature": self.paint_ambient_temp.get(),
             "painting_table_sheet": self.paint_table_sheet.get(),
             "painting_table_header": self.paint_table_header.get(),
@@ -4522,12 +5189,17 @@ class BmDmcsTool:
         self.paint_max_operating_temp_col.set(
             config.get("maximum_operating_temp_column", "")
         )
+        line_match_mode = config.get("line_match_mode", LINE_MATCH_STRIP_SHEET)
         self.paint_line_match_mode.set(
-            config.get(
-                "line_match_mode",
-                "Display 끝 Sheet No. 제거 후 일치",
-            )
+            LEGACY_LINE_MATCH_MODES.get(line_match_mode, line_match_mode)
         )
+        self.paint_sheet_separator.set(config.get("sheet_separator", "-"))
+        self.paint_ins_temp_source.set(
+            config.get("insulation_temp_source", INS_TEMP_SOURCE_LINE)
+        )
+        self.paint_ins_rule_file.set(config.get("insulation_temp_rule_file", ""))
+        self.paint_ins_rule_sheet.set(config.get("insulation_temp_rule_sheet", ""))
+        self.update_insulation_temp_source_ui()
         self.paint_ambient_temp.set(
             config.get("ambient_temperature", "35")
         )
@@ -4676,7 +5348,7 @@ class BmDmcsTool:
             header,
             text=(
                 "A열에는 Paint Type을 입력하고, B열 이후에는 필요한 만큼 "
-                "Maximum Operating Temperature 구간별 Paint Symbol 열을 추가할 수 있습니다."
+                "Painting 적용 Temp. 구간별 Paint Symbol 열을 추가할 수 있습니다."
             ),
             bg=self.colors["navy"],
             fg="#D4E1EC",
@@ -5385,9 +6057,10 @@ class BmDmcsTool:
 
             required_line_columns = [
                 self.paint_line_no_col.get(),
-                self.paint_operating_temp_col.get(),
                 self.paint_max_operating_temp_col.get(),
             ]
+            if self._ins_temp_uses_line_list():
+                required_line_columns.append(self.paint_operating_temp_col.get())
             missing_line_columns = [
                 column
                 for column in required_line_columns
@@ -5487,6 +6160,17 @@ class BmDmcsTool:
                     + "\n".join(missing_display_columns)
                 )
 
+            insulation_temp_rules = []
+            if self._ins_temp_uses_rule_file():
+                try:
+                    insulation_temp_rules = self._load_insulation_temp_rules(
+                        headers,
+                        ambient_temperature,
+                    )
+                except Exception:
+                    wb_in.close()
+                    raise
+
             wb_out = Workbook(write_only=True)
             display_ws = wb_out.create_sheet("Display_Format")
             display_ws.append(headers)
@@ -5515,7 +6199,7 @@ class BmDmcsTool:
                 "Material Group",
                 "Paint Suffix",
                 "Paint Type",
-                "Maximum Operating Temp.",
+                "Painting 적용 Temp.",
                 "Issue Reason",
             ])
 
@@ -5527,10 +6211,11 @@ class BmDmcsTool:
                 "Line No. Ambiguous": 0,
                 "Duplicate Line No.": 0,
                 "Conflicting Duplicate Line No.": 0,
-                "Operating Temp. Converted": 0,
-                "Operating Temp. Issue": 0,
-                "Maximum Operating Temp. Converted": 0,
-                "Maximum Operating Temp. Issue": 0,
+                "Insulation Temp. by Rule File": 0,
+                "Insulation Temp. by Line List": 0,
+                "Insulation Temp. Issue": 0,
+                "Painting Temp. Converted": 0,
+                "Painting Temp. Issue": 0,
                 "Paint Symbol Determined": 0,
                 "Paint Symbol Issue": 0,
             }
@@ -5575,8 +6260,11 @@ class BmDmcsTool:
                     line_match_cache,
                 )
 
-                operating_value = None
+                insulation_value_temp = None
                 maximum_value = None
+                line_operating_value = None
+                line_operating_original = ""
+                uses_line_for_insulation = self._ins_temp_uses_line_list()
 
                 if line_record is None:
                     summary["Line No. Unmatched"] += 1
@@ -5587,12 +6275,15 @@ class BmDmcsTool:
                         drawing_number,
                         "",
                         "",
-                        "Operating / Maximum Operating",
+                        (
+                            "Insulation / Painting 적용 Temp."
+                            if uses_line_for_insulation
+                            else "Painting 적용 Temp."
+                        ),
                         "",
                         line_match_issue or "Line No. 매칭 실패",
                     ])
-                    summary["Operating Temp. Issue"] += 1
-                    summary["Maximum Operating Temp. Issue"] += 1
+                    summary["Painting Temp. Issue"] += 1
                 else:
                     summary["Line No. Matched"] += 1
                     if line_match_issue == "포함 방식으로 매칭":
@@ -5625,58 +6316,86 @@ class BmDmcsTool:
                             issue_reason,
                         ])
 
-                    (
-                        operating_value,
-                        operating_status,
-                        operating_original,
-                    ) = self._normalize_temperature(
-                        line_record["operating_original"],
-                        ambient_temperature,
-                    )
+                    if uses_line_for_insulation:
+                        (
+                            line_operating_value,
+                            _operating_status,
+                            line_operating_original,
+                        ) = self._normalize_temperature(
+                            line_record["operating_original"],
+                            ambient_temperature,
+                        )
                     (
                         maximum_value,
-                        maximum_status,
+                        _maximum_status,
                         maximum_original,
                     ) = self._normalize_temperature(
                         line_record["maximum_original"],
                         ambient_temperature,
                     )
 
-                    if operating_value is None:
-                        summary["Operating Temp. Issue"] += 1
-                        temperature_issue_ws.append([
-                            display_row_no,
-                            drawing_number,
-                            line_record["excel_row"],
-                            line_record["line_number"],
-                            "Operating Temp.",
-                            operating_original,
-                            "유효한 온도값 없음",
-                        ])
-                    else:
-                        summary["Operating Temp. Converted"] += 1
-
                     if maximum_value is None:
-                        summary["Maximum Operating Temp. Issue"] += 1
+                        summary["Painting Temp. Issue"] += 1
                         temperature_issue_ws.append([
                             display_row_no,
                             drawing_number,
                             line_record["excel_row"],
                             line_record["line_number"],
-                            "Maximum Operating Temp.",
+                            "Painting 적용 Temp.",
                             maximum_original,
                             "유효한 온도값 없음",
                         ])
                     else:
-                        summary[
-                            "Maximum Operating Temp. Converted"
-                        ] += 1
+                        summary["Painting Temp. Converted"] += 1
+
+                # ① Insulation Temperature: 규칙 파일 → (선택 시) Line List 순서로 결정
+                rule_temp = None
+                if insulation_temp_rules:
+                    rule_temp, _rule_row = self._insulation_temp_from_rules(
+                        row_values,
+                        header_index,
+                        insulation_temp_rules,
+                    )
+                if rule_temp is not None:
+                    insulation_value_temp = rule_temp
+                    summary["Insulation Temp. by Rule File"] += 1
+                elif uses_line_for_insulation:
+                    insulation_value_temp = line_operating_value
+                    if line_operating_value is not None:
+                        summary["Insulation Temp. by Line List"] += 1
+
+                if insulation_value_temp is None:
+                    summary["Insulation Temp. Issue"] += 1
+                    if not uses_line_for_insulation:
+                        reason = "Insulation Temp 규칙 미일치"
+                    elif line_record is None:
+                        reason = (
+                            "Insulation Temp 규칙 미일치 및 Line No. 매칭 실패"
+                            if insulation_temp_rules
+                            else ""
+                        )
+                    else:
+                        reason = (
+                            "Insulation Temp 규칙 미일치 및 Line List 유효한 온도값 없음"
+                            if insulation_temp_rules
+                            else "유효한 온도값 없음"
+                        )
+                    if reason:
+                        temperature_issue_ws.append([
+                            display_row_no,
+                            drawing_number,
+                            line_record["excel_row"] if line_record else "",
+                            line_record["line_number"] if line_record else "",
+                            "Insulation 적용 Temp.",
+                            line_operating_original,
+                            reason,
+                        ])
 
                 row_values[
                     header_index[
                         "Insulation Temp (Operating Temp)"
                     ]
-                ] = operating_value
+                ] = insulation_value_temp
 
                 class_value = row_values[
                     header_index[self.paint_class_col.get()]
@@ -5712,7 +6431,7 @@ class BmDmcsTool:
                     )
                 if maximum_value is None:
                     painting_issue_reasons.append(
-                        "Maximum Operating Temp. 미결정"
+                        "Painting 적용 Temp. 미결정"
                     )
 
                 if (
@@ -5802,11 +6521,31 @@ class BmDmcsTool:
             summary_ws.append(["Line List Header End Row", header_end])
             summary_ws.append(["Line List Data Start Row", data_start])
             summary_ws.append([
-                "Operating Temp. Source Column",
-                self.paint_operating_temp_col.get(),
+                "Sh't No. Separator",
+                self.paint_sheet_separator.get(),
             ])
             summary_ws.append([
-                "Maximum Operating Temp. Source Column",
+                "Insulation Temp. Source",
+                self.paint_ins_temp_source.get(),
+            ])
+            summary_ws.append([
+                "Insulation Temp. Line List Column",
+                (
+                    self.paint_operating_temp_col.get()
+                    if self._ins_temp_uses_line_list()
+                    else ""
+                ),
+            ])
+            summary_ws.append([
+                "Insulation Temp. Rule File",
+                (
+                    self.paint_ins_rule_file.get()
+                    if self._ins_temp_uses_rule_file()
+                    else ""
+                ),
+            ])
+            summary_ws.append([
+                "Painting Temp. Line List Column",
                 self.paint_max_operating_temp_col.get(),
             ])
 
@@ -5846,7 +6585,8 @@ class BmDmcsTool:
                         f"Line No. 미매칭: "
                         f"{summary['Line No. Unmatched']:,}건\n"
                         f"온도 이슈: "
-                        f"{summary['Operating Temp. Issue'] + summary['Maximum Operating Temp. Issue']:,}건\n"
+                        f"Insulation {summary['Insulation Temp. Issue']:,}건 / "
+                        f"Painting {summary['Painting Temp. Issue']:,}건\n"
                         f"Paint Symbol 미결정: "
                         f"{summary['Paint Symbol Issue']:,}건\n\n"
                         f"{output_path}"
@@ -5858,7 +6598,7 @@ class BmDmcsTool:
             self.log(traceback.format_exc())
             self.root.after(
                 0,
-                lambda: messagebox.showerror(
+                lambda exc=exc: messagebox.showerror(
                     "오류",
                     str(exc),
                 ),
@@ -6040,7 +6780,7 @@ class BmDmcsTool:
             self.log(traceback.format_exc())
             self.root.after(
                 0,
-                lambda: messagebox.showerror("오류", str(exc)),
+                lambda exc=exc: messagebox.showerror("오류", str(exc)),
             )
         finally:
             self.set_running(False)
@@ -6104,7 +6844,7 @@ class BmDmcsTool:
             ))
         except Exception as exc:
             self.log(traceback.format_exc())
-            self.root.after(0, lambda: messagebox.showerror("오류", str(exc)))
+            self.root.after(0, lambda exc=exc: messagebox.showerror("오류", str(exc)))
         finally:
             self.set_running(False)
 
