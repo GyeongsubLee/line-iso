@@ -163,8 +163,14 @@ LEGACY_LINE_MATCH_MODES = {
 # 5번 Insulation Temperature 입력 방식
 INS_TEMP_SOURCE_LINE = "Line List 온도 열"
 INS_TEMP_SOURCE_RULE = "Display 열 기준 규칙 파일"
-INS_TEMP_SOURCE_RULE_FIRST = "규칙 파일 우선 → 없으면 Line List"
-INS_TEMP_SOURCES = [INS_TEMP_SOURCE_LINE, INS_TEMP_SOURCE_RULE, INS_TEMP_SOURCE_RULE_FIRST]
+INS_TEMP_SOURCES = [INS_TEMP_SOURCE_LINE, INS_TEMP_SOURCE_RULE]
+# 이전 버전에서 저장한 규칙 JSON 호환용
+LEGACY_INS_TEMP_SOURCES = {"규칙 파일 우선 → 없으면 Line List": INS_TEMP_SOURCE_RULE}
+
+# 5번 Paint Symbol 입력 방식
+PAINT_SOURCE_TABLE = "Painting Code Table 계산"
+PAINT_SOURCE_RULE = "Display 열 기준 규칙 파일"
+PAINT_SOURCES = [PAINT_SOURCE_TABLE, PAINT_SOURCE_RULE]
 
 
 # -----------------------------------------------------------------------------
@@ -2507,6 +2513,18 @@ class BmDmcsTool:
 
         return resolve_from(0)
 
+    def _combo_display(self, row, columns):
+        """Combined value in its original form (for result sheets)."""
+        return self._mapping_separator().join(
+            self._display_cell_text(row.get(column)) for column in columns
+        )
+
+    @staticmethod
+    def _display_cell_text(value):
+        if isinstance(value, float) and value.is_integer():
+            value = int(value)
+        return clean_text(value)
+
     def _combo_key(self, row, columns):
         """Join the row values of the given columns with the mapping separator."""
         parts = []
@@ -2571,7 +2589,9 @@ class BmDmcsTool:
                     issues.append({
                         "Issue Type": "Mapping Table Blank",
                         "Excel Row": excel_row,
-                        "Generated Key": bm_value or pcwbs_value,
+                        "Generated Key": self._display_cell_text(
+                            values[0] if bm_value else (values[1] if len(values) > 1 else None)
+                        ),
                         "Details": "A열 또는 B열 값이 비어 있어 제외함",
                     })
                     continue
@@ -2625,12 +2645,13 @@ class BmDmcsTool:
         """PCWBS keys that one 3D BM row points to through the Mapping Table."""
         table = self._active_key_mapping
         value, error = self._combo_key(row, table["bm_columns"])
+        display = self._combo_display(row, table["bm_columns"])
         if not value:
-            return [], value, error
+            return [], display, error
         keys = table["map"].get(value, [])
         if not keys:
-            return [], value, f"Mapping Table에 없는 3D BM 조합 값: {value}"
-        return list(keys), value, ""
+            return [], display, f"Mapping Table에 없는 3D BM 조합 값: {display}"
+        return list(keys), display, ""
 
     def preview_pcwbs_mapping_table(self):
         try:
@@ -3164,6 +3185,7 @@ class BmDmcsTool:
         matched_count = 0
         unmatched_count = 0
 
+        shown_keys = {}
         for idx, row in enumerate(ref_rows, start=1):
             key, key_error = self._pcwbs_row_key(row, settings)
             if key:
@@ -3183,9 +3205,16 @@ class BmDmcsTool:
             else:
                 unmatched_count += 1
 
+            if use_table:
+                # 비교는 정규화 키로 하고, 결과에는 원래 모양 그대로 표시
+                shown_key = self._combo_display(row, self._active_key_mapping["pcwbs_columns"])
+            else:
+                shown_key = key
+            if key:
+                shown_keys.setdefault(key, shown_key)
             output_row = {header: row.get(header) for header in ref_headers}
             output_row.update({
-                "PCWBS Generated Key": key,
+                "PCWBS Generated Key": shown_key,
                 result_column: match_result,
             })
             result_rows.append(output_row)
@@ -3201,7 +3230,7 @@ class BmDmcsTool:
             {
                 "Issue Type": "PCWBS Duplicate Key",
                 "Excel Row": "",
-                "Generated Key": key,
+                "Generated Key": shown_keys.get(key, key),
                 "Details": f"PCWBS에서 {count}회 중복",
             }
             for key, count in pcwbs_key_counts.items() if count > 1
@@ -3210,7 +3239,7 @@ class BmDmcsTool:
             {
                 "Issue Type": "BM Duplicate Key",
                 "Excel Row": "",
-                "Generated Key": key,
+                "Generated Key": shown_keys.get(key, key),
                 "Details": f"3D BM에서 {count}회 출현",
             }
             for key, count in bm_key_counts.items() if count > 1
@@ -4421,6 +4450,9 @@ class BmDmcsTool:
         self.paint_ins_temp_source = tk.StringVar(value=INS_TEMP_SOURCE_LINE)
         self.paint_ins_rule_file = tk.StringVar(value="")
         self.paint_ins_rule_sheet = tk.StringVar(value="")
+        self.paint_symbol_source = tk.StringVar(value=PAINT_SOURCE_TABLE)
+        self.paint_rule_file = tk.StringVar(value="")
+        self.paint_rule_sheet = tk.StringVar(value="")
         self.paint_selected_header_text = tk.StringVar(
             value="선택한 열의 전체명이 여기에 표시됩니다."
         )
@@ -4648,15 +4680,16 @@ class BmDmcsTool:
             fg="#555555",
         ).pack(side="left", padx=4)
 
-        # ---- ① Insulation Temperature → Display 'Insulation Temp (Operating Temp)' 열
+        # ---- ① Line List Insulation Temp → Display Format 'Insulation Temp' 열
         insulation_temp_frame = tk.LabelFrame(
             map_frame,
-            text="① Insulation Temperature (→ Insulation Temp 열)",
+            text="① Line List Insulation Temp → Display Format Insulation Temp 열",
             padx=6,
             pady=4,
         )
         insulation_temp_frame.grid(row=0, column=1, sticky="nsew", padx=4)
         insulation_temp_frame.grid_columnconfigure(1, weight=1)
+        self.paint_ins_frame = insulation_temp_frame
         tk.Label(insulation_temp_frame, text="온도 입력 방식").grid(
             row=0, column=0, sticky="e", padx=(0, 4), pady=2
         )
@@ -4672,42 +4705,20 @@ class BmDmcsTool:
             "<<ComboboxSelected>>",
             lambda _event: self.update_insulation_temp_source_ui(),
         )
-        self.paint_ins_temp_combo = add_combo_row(
+        # row 1: Line List 방식
+        add_combo_row(
             insulation_temp_frame, 1, "Insulation 적용 Temp.",
             self.paint_operating_temp_col, self.paint_line_combos,
         )
-        tk.Label(insulation_temp_frame, text="온도 규칙 파일").grid(
-            row=2, column=0, sticky="e", padx=(0, 4), pady=2
+        # row 2~3: 규칙 파일 방식
+        self.paint_ins_rule_widgets = self._build_rule_file_rows(
+            insulation_temp_frame,
+            2,
+            "온도 규칙 파일",
+            self.paint_ins_rule_file,
+            self.paint_ins_rule_sheet,
+            self.show_insulation_temp_rule_example,
         )
-        rule_file_frame = tk.Frame(insulation_temp_frame)
-        rule_file_frame.grid(row=2, column=1, sticky="ew", pady=2)
-        rule_file_frame.grid_columnconfigure(0, weight=1)
-        self.paint_ins_rule_entry = tk.Entry(
-            rule_file_frame,
-            textvariable=self.paint_ins_rule_file,
-        )
-        self.paint_ins_rule_entry.grid(row=0, column=0, sticky="ew")
-        self.paint_ins_rule_button = tk.Button(
-            rule_file_frame,
-            text="파일 선택",
-            command=self.choose_paint_ins_rule_file,
-        )
-        self.paint_ins_rule_button.grid(row=0, column=1, padx=(4, 0))
-        rule_sheet_frame = tk.Frame(insulation_temp_frame)
-        rule_sheet_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=2)
-        tk.Label(rule_sheet_frame, text="규칙 시트").pack(side="left")
-        self.paint_ins_rule_sheet_combo = ttk.Combobox(
-            rule_sheet_frame,
-            textvariable=self.paint_ins_rule_sheet,
-            state="readonly",
-            width=16,
-        )
-        self.paint_ins_rule_sheet_combo.pack(side="left", padx=4)
-        tk.Button(
-            rule_sheet_frame,
-            text="규칙 파일 예시",
-            command=self.show_insulation_temp_rule_example,
-        ).pack(side="left", padx=4)
         tk.Label(insulation_temp_frame, text="AMB 대체 온도").grid(
             row=4, column=0, sticky="e", padx=(0, 4), pady=2
         )
@@ -4716,33 +4727,88 @@ class BmDmcsTool:
             textvariable=self.paint_ambient_temp,
             width=8,
         ).grid(row=4, column=1, sticky="w", pady=2)
+        self.paint_ins_help = tk.StringVar(value="")
+        help_label = tk.Label(
+            insulation_temp_frame,
+            textvariable=self.paint_ins_help,
+            fg="#555555",
+            anchor="w",
+            justify="left",
+            wraplength=380,
+        )
+        help_label.grid(row=5, column=0, columnspan=2, sticky="w", pady=(2, 0))
+        insulation_temp_frame.bind(
+            "<Configure>",
+            lambda event, label=help_label: label.configure(
+                wraplength=max(200, event.width - 20)
+            ),
+            add="+",
+        )
 
-        # ---- ② Paint Code → Display 'Paint Symbol' 열
+        # ---- ② Paint Code → Display Format 'Paint Symbol' 열
         paint_code_frame = tk.LabelFrame(
             map_frame,
-            text="② Paint Code (→ Paint Symbol 열)",
+            text="② Paint Code → Display Format Paint Symbol 열",
             padx=6,
             pady=4,
         )
         paint_code_frame.grid(row=0, column=2, sticky="nsew", padx=(4, 0))
         paint_code_frame.grid_columnconfigure(1, weight=1)
+        self.paint_code_frame = paint_code_frame
+        tk.Label(paint_code_frame, text="Paint 입력 방식").grid(
+            row=0, column=0, sticky="e", padx=(0, 4), pady=2
+        )
+        self.paint_source_combo = ttk.Combobox(
+            paint_code_frame,
+            textvariable=self.paint_symbol_source,
+            values=PAINT_SOURCES,
+            state="readonly",
+            width=30,
+        )
+        self.paint_source_combo.grid(row=0, column=1, sticky="ew", pady=2)
+        self.paint_source_combo.bind(
+            "<<ComboboxSelected>>",
+            lambda _event: self.update_paint_source_ui(),
+        )
+        # row 1~3: Painting Code Table 계산 방식
         add_combo_row(
-            paint_code_frame, 0, "Display Class",
+            paint_code_frame, 1, "Display Class",
             self.paint_class_col, self.paint_display_combos,
         )
         add_combo_row(
-            paint_code_frame, 1, "Display Insulation Symbol",
+            paint_code_frame, 2, "Display Insulation Symbol",
             self.paint_insulation_col, self.paint_display_combos,
         )
         add_combo_row(
-            paint_code_frame, 2, "Painting 적용 Temp.",
+            paint_code_frame, 3, "Painting 적용 Temp.",
             self.paint_max_operating_temp_col, self.paint_line_combos,
         )
-        tk.Label(
+        # row 4~5: 규칙 파일 방식
+        self.paint_rule_widgets = self._build_rule_file_rows(
             paint_code_frame,
-            text="Painting Code Table은 위 '입력 및 결과 파일'에서 선택",
+            4,
+            "Paint 규칙 파일",
+            self.paint_rule_file,
+            self.paint_rule_sheet,
+            self.show_paint_rule_example,
+        )
+        self.paint_code_help = tk.StringVar(value="")
+        help_label = tk.Label(
+            paint_code_frame,
+            textvariable=self.paint_code_help,
             fg="#555555",
-        ).grid(row=3, column=0, columnspan=2, sticky="w", pady=2)
+            anchor="w",
+            justify="left",
+            wraplength=380,
+        )
+        help_label.grid(row=6, column=0, columnspan=2, sticky="w", pady=(2, 0))
+        paint_code_frame.bind(
+            "<Configure>",
+            lambda event, label=help_label: label.configure(
+                wraplength=max(200, event.width - 20)
+            ),
+            add="+",
+        )
 
         full_name_frame = tk.LabelFrame(
             map_frame,
@@ -4940,6 +5006,10 @@ class BmDmcsTool:
         )
         self.paint_run_button.pack(side="left")
 
+        self.paint_material_frame = material_frame
+        self.paint_suffix_frame = insulation_frame
+        self.update_paint_source_ui()
+
     def show_paint_header_full_name(self, header_name):
         """Show a complete header name below the comboboxes."""
         self.paint_selected_header_text.set(
@@ -5059,42 +5129,96 @@ class BmDmcsTool:
         return result
 
     def _ins_temp_uses_rule_file(self):
-        return self.paint_ins_temp_source.get() in [
-            INS_TEMP_SOURCE_RULE,
-            INS_TEMP_SOURCE_RULE_FIRST,
-        ]
+        return self.paint_ins_temp_source.get() == INS_TEMP_SOURCE_RULE
 
     def _ins_temp_uses_line_list(self):
-        return self.paint_ins_temp_source.get() in [
-            INS_TEMP_SOURCE_LINE,
-            INS_TEMP_SOURCE_RULE_FIRST,
-        ]
+        return not self._ins_temp_uses_rule_file()
+
+    def _paint_uses_rule_file(self):
+        return self.paint_symbol_source.get() == PAINT_SOURCE_RULE
+
+    def _line_list_required(self):
+        """Line List is needed only when one of the two sides reads it."""
+        return self._ins_temp_uses_line_list() or not self._paint_uses_rule_file()
+
+    def _show_grid_rows(self, frame, rows, visible):
+        """Show or hide every widget placed on the given grid rows."""
+        # grid_slaves()는 숨긴 위젯을 돌려주지 않으므로 처음 본 위젯을 기억해 둔다.
+        cache = self.__dict__.setdefault("_grid_row_widgets", {})
+        for row_no in rows:
+            key = (str(frame), row_no)
+            if key not in cache:
+                cache[key] = frame.grid_slaves(row=row_no)
+            for widget in cache[key]:
+                if visible:
+                    widget.grid()
+                else:
+                    widget.grid_remove()
+
+    def _build_rule_file_rows(self, parent, row, label, file_var, sheet_var, example_command):
+        """File + sheet + 예시 rows for a 'Display 열 기준 규칙 파일'."""
+        tk.Label(parent, text=label).grid(row=row, column=0, sticky="e", padx=(0, 4), pady=2)
+        file_frame = tk.Frame(parent)
+        file_frame.grid(row=row, column=1, sticky="ew", pady=2)
+        file_frame.grid_columnconfigure(0, weight=1)
+        tk.Entry(file_frame, textvariable=file_var).grid(row=0, column=0, sticky="ew")
+
+        tk.Label(parent, text="규칙 시트").grid(row=row + 1, column=0, sticky="e", padx=(0, 4), pady=2)
+        sheet_frame = tk.Frame(parent)
+        sheet_frame.grid(row=row + 1, column=1, sticky="w", pady=2)
+        sheet_combo = ttk.Combobox(sheet_frame, textvariable=sheet_var, state="readonly", width=18)
+        sheet_combo.pack(side="left")
+        tk.Button(sheet_frame, text="규칙 파일 예시", command=example_command).pack(side="left", padx=6)
+
+        def choose_file():
+            path = filedialog.askopenfilename(
+                initialdir=str(self.project_root / "03_reference"),
+                filetypes=[("Excel", "*.xlsx *.xlsm")],
+            )
+            if path:
+                file_var.set(path)
+                self._load_sheet_names_to_combo(path, sheet_combo, sheet_var)
+
+        tk.Button(file_frame, text="파일 선택", command=choose_file).grid(row=0, column=1, padx=(4, 0))
+        return {"rows": [row, row + 1], "sheet_combo": sheet_combo}
 
     def update_insulation_temp_source_ui(self):
-        """Enable only the inputs used by the selected Insulation Temp. source."""
-        if not hasattr(self, "paint_ins_temp_combo"):
+        """Show only the inputs used by the selected Insulation Temp. source."""
+        if not hasattr(self, "paint_ins_rule_widgets"):
             return
-        self.paint_ins_temp_combo.configure(
-            state="readonly" if self._ins_temp_uses_line_list() else "disabled"
-        )
         use_rule = self._ins_temp_uses_rule_file()
-        self.paint_ins_rule_entry.configure(state="normal" if use_rule else "disabled")
-        self.paint_ins_rule_button.configure(state="normal" if use_rule else "disabled")
-        self.paint_ins_rule_sheet_combo.configure(
-            state="readonly" if use_rule else "disabled"
-        )
+        self._show_grid_rows(self.paint_ins_frame, [1], not use_rule)
+        self._show_grid_rows(self.paint_ins_frame, self.paint_ins_rule_widgets["rows"], use_rule)
+        if use_rule:
+            self.paint_ins_help.set(
+                "규칙 파일의 조건을 위에서부터 검사해 처음 일치한 규칙 1개만 적용합니다 "
+                "(VLOOKUP처럼 먼저 나온 조건 우선). 조건이 겹치면 원하는 규칙을 위에 두세요."
+            )
+        else:
+            self.paint_ins_help.set(
+                "Line List에서 선택한 온도 열(Operating / Max. Operating / Design 등) 값을 입력합니다."
+            )
 
-    def choose_paint_ins_rule_file(self):
-        path = filedialog.askopenfilename(
-            initialdir=str(self.project_root / "03_reference"),
-            filetypes=[("Excel", "*.xlsx *.xlsm")],
-        )
-        if path:
-            self.paint_ins_rule_file.set(path)
-            self._load_sheet_names_to_combo(
-                path,
-                self.paint_ins_rule_sheet_combo,
-                self.paint_ins_rule_sheet,
+    def update_paint_source_ui(self):
+        """Show only the inputs used by the selected Paint Symbol source."""
+        if not hasattr(self, "paint_rule_widgets"):
+            return
+        use_rule = self._paint_uses_rule_file()
+        self._show_grid_rows(self.paint_code_frame, [1, 2, 3], not use_rule)
+        self._show_grid_rows(self.paint_code_frame, self.paint_rule_widgets["rows"], use_rule)
+        for frame in [getattr(self, "paint_material_frame", None), getattr(self, "paint_suffix_frame", None)]:
+            if frame is not None:
+                self._set_widgets_state(frame, not use_rule)
+        if use_rule:
+            self.paint_code_help.set(
+                "규칙 파일의 조건을 위에서부터 검사해 처음 일치한 규칙의 Paint Symbol을 입력합니다 "
+                "(VLOOKUP처럼 먼저 나온 조건 우선). 아래 Material Group / Paint Suffix 규칙은 사용하지 않습니다."
+            )
+        else:
+            self.paint_code_help.set(
+                "Paint Symbol은 Insulation과 Temp를 바탕으로 계산합니다: "
+                "Class → Material Group, Insulation Symbol → Paint Suffix로 Paint Type(예: CS-H)을 정하고, "
+                "Painting 적용 Temp. 구간에 맞는 값을 Painting Code Table에서 찾습니다."
             )
 
     def show_insulation_temp_rule_example(self):
@@ -5104,37 +5228,64 @@ class BmDmcsTool:
                 "Display Format의 열 값(Fluid, Class 등)에 따라 Insulation Temp를 일괄 입력하는 규칙 파일입니다."
             ),
             note=(
-                "1행은 제목(자유롭게 작성), 2행부터 규칙을 입력합니다. 위에서부터 처음 일치한 규칙을 적용합니다.\n"
+                "1행은 제목(자유롭게 작성), 2행부터 규칙을 입력합니다.\n"
                 "A열 = Display Format 열 이름(예: Fluid, Class)  /  B열 = 그 열의 값(정확히 일치, 대소문자 무시, "
-                "'*' = 모든 값)  /  C열 = 입력할 온도 (숫자, 범위, AMB 가능)"
+                "'*' = 모든 값)  /  C열 = 입력할 온도 (숫자, 범위, AMB 가능)\n"
+                "조건이 겹치면 위에 있는 규칙이 우선입니다 (VLOOKUP 방식). "
+                "예) Fluid=FW, Class=A1C인 행은 아래 표에서 2행(Fluid FW → 45)이 먼저 일치하므로 45."
             ),
             headers=["Display Format 열", "값", "Insulation Temp"],
             rows=[
                 ["Fluid", "SC", "180"],
-                ["Fluid", "HW", "95"],
-                ["Class", "A1C", "AMB"],
+                ["Fluid", "FW", "45"],
+                ["Class", "A1C", "35"],
+                ["Class", "B2S", "AMB"],
                 ["Fluid", "*", "60"],
             ],
             file_name="Insulation_Temp_Rule_Example.xlsx",
             sheet_title="INS TEMP RULE",
         )
 
-    def _load_insulation_temp_rules(self, display_headers, ambient_temperature):
-        """
-        Read the Insulation Temp. rule file.
+    def show_paint_rule_example(self):
+        self._show_table_example(
+            title="Paint Symbol 규칙 파일 예시",
+            subtitle=(
+                "Display Format의 열 값(Insulation Symbol, Class 등)에 따라 Paint Symbol을 직접 입력하는 규칙 파일입니다."
+            ),
+            note=(
+                "1행은 제목(자유롭게 작성), 2행부터 규칙을 입력합니다.\n"
+                "A열 = Display Format 열 이름(예: Insulation Symbol, Class)  /  B열 = 그 열의 값(정확히 일치, "
+                "대소문자 무시, '*' = 모든 값)  /  C열 = 입력할 Paint Symbol\n"
+                "조건이 겹치면 위에 있는 규칙이 우선입니다 (VLOOKUP 방식)."
+            ),
+            headers=["Display Format 열", "값", "Paint Symbol"],
+            rows=[
+                ["Insulation Symbol", "H", "B1→B2"],
+                ["Insulation Symbol", "P", "B1→B2"],
+                ["Class", "A1C", "A1→A4"],
+                ["Insulation Symbol", "*", "No"],
+            ],
+            file_name="Paint_Symbol_Rule_Example.xlsx",
+            sheet_title="PAINT RULE",
+        )
 
-        A: Display Format column, B: value ('*' = any), C: temperature.
-        Returns a list of (display_column, value_casefold, temperature, excel_row).
+    def _load_display_rule_file(self, path_text, sheet_text, display_headers, label, value_parser):
         """
-        path = Path(self.paint_ins_rule_file.get().strip())
+        Read a 'Display 열 기준 규칙 파일'.
+
+        A: Display Format column, B: value ('*' = any), C: result.
+        value_parser(raw) -> (parsed_value or None, original_text).
+        Returns a list of (display_column, value_casefold, result, excel_row), in file order.
+        """
+        path = Path(path_text.strip())
         if not path.is_file():
-            raise ValueError("Insulation Temp 규칙 파일을 선택하세요.")
+            raise ValueError(f"{label} 규칙 파일을 선택하세요.")
 
         wb = load_workbook(path, read_only=True, data_only=True)
         try:
-            sheet_name = self.paint_ins_rule_sheet.get().strip() or wb.sheetnames[0]
+            sheet_name = sheet_text.strip() or wb.sheetnames[0]
             if sheet_name not in wb.sheetnames:
-                raise ValueError(f"Insulation Temp 규칙 시트를 찾을 수 없습니다: {sheet_name}")
+                raise ValueError(f"{label} 규칙 시트를 찾을 수 없습니다: {sheet_name}")
             ws = wb[sheet_name]
             rules = []
             errors = []
@@ -5150,17 +5301,14 @@ class BmDmcsTool:
                 if not display_column:
                     errors.append(f"{excel_row}행: Display Format에 '{column_name}' 열이 없음")
                     continue
-                temperature, _status, original = self._normalize_temperature(
-                    values[2],
-                    ambient_temperature,
-                )
-                if temperature is None:
-                    errors.append(f"{excel_row}행: 온도값 오류 ('{original}')")
+                result, original = value_parser(values[2])
+                if result is None:
+                    errors.append(f"{excel_row}행: C열 값 오류 ('{original}')")
                     continue
                 rules.append((
                     display_column,
                     clean_text(values[1]).casefold(),
-                    temperature,
+                    result,
                     excel_row,
                 ))
         finally:
@@ -5168,19 +5316,45 @@ class BmDmcsTool:
 
         if errors:
             raise ValueError(
-                "Insulation Temp 규칙 파일을 확인하세요:\n" + "\n".join(errors[:20])
+                f"{label} 규칙 파일을 확인하세요:\n" + "\n".join(errors[:20])
             )
         if not rules:
-            raise ValueError("Insulation Temp 규칙 파일에 규칙이 없습니다. (2행부터 입력)")
+            raise ValueError(f"{label} 규칙 파일에 규칙이 없습니다. (2행부터 입력)")
         return rules
 
+    def _load_insulation_temp_rules(self, display_headers, ambient_temperature):
+        def parse_temperature(raw):
+            temperature, _status, original = self._normalize_temperature(raw, ambient_temperature)
+            return temperature, original
+
+        return self._load_display_rule_file(
+            self.paint_ins_rule_file.get(),
+            self.paint_ins_rule_sheet.get(),
+            display_headers,
+            "Insulation Temp",
+            parse_temperature,
+        )
+
+    def _load_paint_symbol_rules(self, display_headers):
+        def parse_symbol(raw):
+            text = clean_text(raw)
+            return (text or None), text
+
+        return self._load_display_rule_file(
+            self.paint_rule_file.get(),
+            self.paint_rule_sheet.get(),
+            display_headers,
+            "Paint Symbol",
+            parse_symbol,
+        )
+
     @staticmethod
-    def _insulation_temp_from_rules(row_values, header_index, rules):
-        """Return (temperature, rule_excel_row) of the first matching rule."""
-        for display_column, rule_value, temperature, excel_row in rules:
+    def _value_from_display_rules(row_values, header_index, rules):
+        """VLOOKUP style: return (result, rule_excel_row) of the FIRST matching rule."""
+        for display_column, rule_value, result, excel_row in rules:
             cell = clean_text(row_values[header_index[display_column]]).casefold()
             if rule_value == "*" or cell == rule_value:
-                return temperature, excel_row
+                return result, excel_row
         return None, None
 
     def _temperature_painting_rule_config(self):
@@ -5201,6 +5375,9 @@ class BmDmcsTool:
             "insulation_temp_source": self.paint_ins_temp_source.get(),
             "insulation_temp_rule_file": self.paint_ins_rule_file.get(),
             "insulation_temp_rule_sheet": self.paint_ins_rule_sheet.get(),
+            "paint_symbol_source": self.paint_symbol_source.get(),
+            "paint_symbol_rule_file": self.paint_rule_file.get(),
+            "paint_symbol_rule_sheet": self.paint_rule_sheet.get(),
             "ambient_temperature": self.paint_ambient_temp.get(),
             "painting_table_sheet": self.paint_table_sheet.get(),
             "painting_table_header": self.paint_table_header.get(),
@@ -5279,12 +5456,15 @@ class BmDmcsTool:
             LEGACY_LINE_MATCH_MODES.get(line_match_mode, line_match_mode)
         )
         self.paint_sheet_separator.set(config.get("sheet_separator", "-"))
-        self.paint_ins_temp_source.set(
-            config.get("insulation_temp_source", INS_TEMP_SOURCE_LINE)
-        )
+        ins_source = config.get("insulation_temp_source", INS_TEMP_SOURCE_LINE)
+        self.paint_ins_temp_source.set(LEGACY_INS_TEMP_SOURCES.get(ins_source, ins_source))
+        self.paint_symbol_source.set(config.get("paint_symbol_source", PAINT_SOURCE_TABLE))
+        self.paint_rule_file.set(config.get("paint_symbol_rule_file", ""))
+        self.paint_rule_sheet.set(config.get("paint_symbol_rule_sheet", ""))
         self.paint_ins_rule_file.set(config.get("insulation_temp_rule_file", ""))
         self.paint_ins_rule_sheet.set(config.get("insulation_temp_rule_sheet", ""))
         self.update_insulation_temp_source_ui()
+        self.update_paint_source_ui()
         self.paint_ambient_temp.set(
             config.get("ambient_temperature", "35")
         )
@@ -6105,104 +6285,115 @@ class BmDmcsTool:
             line_path = Path(self.paint_line_file.get().strip())
             output_path = Path(self.paint_output_file.get().strip())
 
+            use_line_list = self._line_list_required()
+            ins_from_line = self._ins_temp_uses_line_list()
+            paint_from_rule = self._paint_uses_rule_file()
+
             if not display_path.exists():
                 raise ValueError("Display Format 파일을 선택하세요.")
-            if not line_path.exists():
+            if use_line_list and not line_path.exists():
                 raise ValueError("Line List 파일을 선택하세요.")
 
             try:
-                header_start = int(
-                    self.paint_line_header_start.get().strip()
-                )
-                header_end = int(
-                    self.paint_line_header_end.get().strip()
-                )
-                data_start = int(
-                    self.paint_line_data_start.get().strip()
-                )
                 ambient_temperature = float(
                     self.paint_ambient_temp.get().strip()
                 )
+                if use_line_list:
+                    header_start = int(
+                        self.paint_line_header_start.get().strip()
+                    )
+                    header_end = int(
+                        self.paint_line_header_end.get().strip()
+                    )
+                    data_start = int(
+                        self.paint_line_data_start.get().strip()
+                    )
+                else:
+                    header_start = header_end = data_start = ""
             except ValueError as exc:
                 raise ValueError(
                     "헤더 행, 데이터 시작 행 및 AMB 대체 온도를 확인하세요."
                 ) from exc
 
-            if data_start <= header_end:
-                raise ValueError(
-                    "Line List 데이터 시작 행은 헤더 종료 행보다 뒤여야 합니다."
-                )
-
-            line_headers = self._read_multiline_headers(
-                line_path,
-                self.paint_line_sheet.get(),
-                header_start,
-                header_end,
-            )
-
-            required_line_columns = [
-                self.paint_line_no_col.get(),
-                self.paint_max_operating_temp_col.get(),
-            ]
-            if self._ins_temp_uses_line_list():
-                required_line_columns.append(self.paint_operating_temp_col.get())
-            missing_line_columns = [
-                column
-                for column in required_line_columns
-                if column not in line_headers
-            ]
-            if missing_line_columns:
-                raise ValueError(
-                    "Line List 선택 열을 찾을 수 없습니다:\n"
-                    + "\n".join(missing_line_columns)
-                )
-
-            self.set_status(
-                "Temperature & Painting",
-                "현재 작업: Line List 매핑표 생성",
-                5,
-            )
-
             line_map = {}
             duplicate_keys = set()
             conflicting_duplicate_keys = set()
 
-            for excel_row, row in self._read_line_list_rows(
-                line_path,
-                self.paint_line_sheet.get(),
-                line_headers,
-                data_start,
-            ):
-                line_number = clean_text(
-                    row.get(self.paint_line_no_col.get())
+            if use_line_list:
+                if data_start <= header_end:
+                    raise ValueError(
+                        "Line List 데이터 시작 행은 헤더 종료 행보다 뒤여야 합니다."
+                    )
+
+                line_headers = self._read_multiline_headers(
+                    line_path,
+                    self.paint_line_sheet.get(),
+                    header_start,
+                    header_end,
                 )
-                key = self._normalize_line_key(line_number)
-                if not key:
-                    continue
 
-                line_record = {
-                    "excel_row": excel_row,
-                    "line_number": line_number,
-                    "operating_original": row.get(
-                        self.paint_operating_temp_col.get()
-                    ),
-                    "maximum_original": row.get(
-                        self.paint_max_operating_temp_col.get()
-                    ),
-                }
+                required_line_columns = [self.paint_line_no_col.get()]
+                if ins_from_line:
+                    required_line_columns.append(self.paint_operating_temp_col.get())
+                if not paint_from_rule:
+                    required_line_columns.append(self.paint_max_operating_temp_col.get())
+                missing_line_columns = [
+                    column
+                    for column in required_line_columns
+                    if column not in line_headers
+                ]
+                if missing_line_columns:
+                    raise ValueError(
+                        "Line List 선택 열을 찾을 수 없습니다:\n"
+                        + "\n".join(missing_line_columns)
+                    )
 
-                if key in line_map:
-                    duplicate_keys.add(key)
-                    previous = line_map[key]
-                    if (
-                        clean_text(previous["operating_original"])
-                        != clean_text(line_record["operating_original"])
-                        or clean_text(previous["maximum_original"])
-                        != clean_text(line_record["maximum_original"])
-                    ):
-                        conflicting_duplicate_keys.add(key)
-                else:
-                    line_map[key] = line_record
+                self.set_status(
+                    "Temperature & Painting",
+                    "현재 작업: Line List 매핑표 생성",
+                    5,
+                )
+
+                for excel_row, row in self._read_line_list_rows(
+                    line_path,
+                    self.paint_line_sheet.get(),
+                    line_headers,
+                    data_start,
+                ):
+                    line_number = clean_text(
+                        row.get(self.paint_line_no_col.get())
+                    )
+                    key = self._normalize_line_key(line_number)
+                    if not key:
+                        continue
+
+                    line_record = {
+                        "excel_row": excel_row,
+                        "line_number": line_number,
+                        "operating_original": (
+                            row.get(self.paint_operating_temp_col.get())
+                            if ins_from_line
+                            else None
+                        ),
+                        "maximum_original": (
+                            row.get(self.paint_max_operating_temp_col.get())
+                            if not paint_from_rule
+                            else None
+                        ),
+                    }
+
+                    if key in line_map:
+                        duplicate_keys.add(key)
+                        previous = line_map[key]
+                        if (
+                            clean_text(previous["operating_original"])
+                            != clean_text(line_record["operating_original"])
+                            or clean_text(previous["maximum_original"])
+                            != clean_text(line_record["maximum_original"])
+                        ):
+                            conflicting_duplicate_keys.add(key)
+                    else:
+                        line_map[key] = line_record
 
             sorted_line_keys = sorted(
                 line_map.keys(),
@@ -6211,7 +6402,7 @@ class BmDmcsTool:
             )
             line_match_cache = {}
 
-            paint_matrix = self._load_paint_matrix()
+            paint_matrix = {} if paint_from_rule else self._load_paint_matrix()
 
             wb_in = load_workbook(
                 display_path,
@@ -6227,12 +6418,16 @@ class BmDmcsTool:
             }
 
             required_display_columns = [
-                self.paint_drawing_col.get(),
-                self.paint_class_col.get(),
-                self.paint_insulation_col.get(),
                 "Insulation Temp (Operating Temp)",
                 "Paint Symbol",
             ]
+            if use_line_list:
+                required_display_columns.append(self.paint_drawing_col.get())
+            if not paint_from_rule:
+                required_display_columns += [
+                    self.paint_class_col.get(),
+                    self.paint_insulation_col.get(),
+                ]
             missing_display_columns = [
                 column
                 for column in required_display_columns
@@ -6246,15 +6441,22 @@ class BmDmcsTool:
                 )
 
             insulation_temp_rules = []
-            if self._ins_temp_uses_rule_file():
-                try:
+            paint_symbol_rules = []
+            try:
+                if not ins_from_line:
                     insulation_temp_rules = self._load_insulation_temp_rules(
                         headers,
                         ambient_temperature,
                     )
-                except Exception:
-                    wb_in.close()
-                    raise
+                if paint_from_rule:
+                    paint_symbol_rules = self._load_paint_symbol_rules(headers)
+            except Exception:
+                wb_in.close()
+                raise
+
+            drawing_index = header_index.get(self.paint_drawing_col.get())
+            class_index = header_index.get(self.paint_class_col.get())
+            insulation_index = header_index.get(self.paint_insulation_col.get())
 
             wb_out = Workbook(write_only=True)
             display_ws = wb_out.create_sheet("Display_Format")
@@ -6301,6 +6503,7 @@ class BmDmcsTool:
                 "Insulation Temp. Issue": 0,
                 "Painting Temp. Converted": 0,
                 "Painting Temp. Issue": 0,
+                "Paint Symbol by Rule File": 0,
                 "Paint Symbol Determined": 0,
                 "Paint Symbol Issue": 0,
             }
@@ -6329,152 +6532,151 @@ class BmDmcsTool:
                     None
                 ] * (len(headers) - len(values))
 
-                drawing_number = clean_text(
-                    row_values[
-                        header_index[self.paint_drawing_col.get()]
-                    ]
-                )
-                (
-                    line_record,
-                    line_key,
-                    line_match_issue,
-                ) = self._match_line_record(
-                    drawing_number,
-                    line_map,
-                    sorted_line_keys,
-                    line_match_cache,
+                drawing_number = (
+                    clean_text(row_values[drawing_index])
+                    if drawing_index is not None
+                    else ""
                 )
 
                 insulation_value_temp = None
                 maximum_value = None
                 line_operating_value = None
                 line_operating_original = ""
-                uses_line_for_insulation = self._ins_temp_uses_line_list()
+                line_record = None
 
-                if line_record is None:
-                    summary["Line No. Unmatched"] += 1
-                    if "여러 개" in line_match_issue:
-                        summary["Line No. Ambiguous"] += 1
-                    temperature_issue_ws.append([
-                        display_row_no,
-                        drawing_number,
-                        "",
-                        "",
-                        (
-                            "Insulation / Painting 적용 Temp."
-                            if uses_line_for_insulation
-                            else "Painting 적용 Temp."
-                        ),
-                        "",
-                        line_match_issue or "Line No. 매칭 실패",
-                    ])
-                    summary["Painting Temp. Issue"] += 1
-                else:
-                    summary["Line No. Matched"] += 1
-                    if line_match_issue == "포함 방식으로 매칭":
-                        summary["Line No. Matched by Contains"] += 1
-
-                    if line_match_issue:
-                        temperature_issue_ws.append([
-                            display_row_no,
-                            drawing_number,
-                            line_record["excel_row"],
-                            line_record["line_number"],
-                            "Line No.",
-                            "",
-                            line_match_issue,
-                        ])
-
-                    if line_key in duplicate_keys:
-                        summary["Duplicate Line No."] += 1
-                        issue_reason = "Line No. 중복"
-                        if line_key in conflicting_duplicate_keys:
-                            summary["Conflicting Duplicate Line No."] += 1
-                            issue_reason = "Line No. 중복 및 온도값 불일치"
-                        temperature_issue_ws.append([
-                            display_row_no,
-                            drawing_number,
-                            line_record["excel_row"],
-                            line_record["line_number"],
-                            "Line No.",
-                            "",
-                            issue_reason,
-                        ])
-
-                    if uses_line_for_insulation:
-                        (
-                            line_operating_value,
-                            _operating_status,
-                            line_operating_original,
-                        ) = self._normalize_temperature(
-                            line_record["operating_original"],
-                            ambient_temperature,
-                        )
+                if use_line_list:
                     (
-                        maximum_value,
-                        _maximum_status,
-                        maximum_original,
-                    ) = self._normalize_temperature(
-                        line_record["maximum_original"],
-                        ambient_temperature,
+                        line_record,
+                        line_key,
+                        line_match_issue,
+                    ) = self._match_line_record(
+                        drawing_number,
+                        line_map,
+                        sorted_line_keys,
+                        line_match_cache,
                     )
 
-                    if maximum_value is None:
-                        summary["Painting Temp. Issue"] += 1
+                    if line_record is None:
+                        summary["Line No. Unmatched"] += 1
+                        if "여러 개" in line_match_issue:
+                            summary["Line No. Ambiguous"] += 1
+                        if ins_from_line and not paint_from_rule:
+                            temperature_type = "Insulation / Painting 적용 Temp."
+                        elif ins_from_line:
+                            temperature_type = "Insulation 적용 Temp."
+                        else:
+                            temperature_type = "Painting 적용 Temp."
+                        temperature_issue_ws.append([
+                            display_row_no,
+                            drawing_number,
+                            "",
+                            "",
+                            temperature_type,
+                            "",
+                            line_match_issue or "Line No. 매칭 실패",
+                        ])
+                        if not paint_from_rule:
+                            summary["Painting Temp. Issue"] += 1
+                    else:
+                        summary["Line No. Matched"] += 1
+                        if line_match_issue == "포함 방식으로 매칭":
+                            summary["Line No. Matched by Contains"] += 1
+
+                        if line_match_issue:
+                            temperature_issue_ws.append([
+                                display_row_no,
+                                drawing_number,
+                                line_record["excel_row"],
+                                line_record["line_number"],
+                                "Line No.",
+                                "",
+                                line_match_issue,
+                            ])
+
+                        if line_key in duplicate_keys:
+                            summary["Duplicate Line No."] += 1
+                            issue_reason = "Line No. 중복"
+                            if line_key in conflicting_duplicate_keys:
+                                summary["Conflicting Duplicate Line No."] += 1
+                                issue_reason = "Line No. 중복 및 온도값 불일치"
+                            temperature_issue_ws.append([
+                                display_row_no,
+                                drawing_number,
+                                line_record["excel_row"],
+                                line_record["line_number"],
+                                "Line No.",
+                                "",
+                                issue_reason,
+                            ])
+
+                        if ins_from_line:
+                            (
+                                line_operating_value,
+                                _operating_status,
+                                line_operating_original,
+                            ) = self._normalize_temperature(
+                                line_record["operating_original"],
+                                ambient_temperature,
+                            )
+
+                        if not paint_from_rule:
+                            (
+                                maximum_value,
+                                _maximum_status,
+                                maximum_original,
+                            ) = self._normalize_temperature(
+                                line_record["maximum_original"],
+                                ambient_temperature,
+                            )
+                            if maximum_value is None:
+                                summary["Painting Temp. Issue"] += 1
+                                temperature_issue_ws.append([
+                                    display_row_no,
+                                    drawing_number,
+                                    line_record["excel_row"],
+                                    line_record["line_number"],
+                                    "Painting 적용 Temp.",
+                                    maximum_original,
+                                    "유효한 온도값 없음",
+                                ])
+                            else:
+                                summary["Painting Temp. Converted"] += 1
+
+                # ① Insulation Temperature → Display Format Insulation Temp 열
+                if ins_from_line:
+                    insulation_value_temp = line_operating_value
+                    if insulation_value_temp is not None:
+                        summary["Insulation Temp. by Line List"] += 1
+                    elif line_record is not None:
                         temperature_issue_ws.append([
                             display_row_no,
                             drawing_number,
                             line_record["excel_row"],
                             line_record["line_number"],
-                            "Painting 적용 Temp.",
-                            maximum_original,
+                            "Insulation 적용 Temp.",
+                            line_operating_original,
                             "유효한 온도값 없음",
                         ])
-                    else:
-                        summary["Painting Temp. Converted"] += 1
-
-                # ① Insulation Temperature: 규칙 파일 → (선택 시) Line List 순서로 결정
-                rule_temp = None
-                if insulation_temp_rules:
-                    rule_temp, _rule_row = self._insulation_temp_from_rules(
+                else:
+                    insulation_value_temp, _rule_row = self._value_from_display_rules(
                         row_values,
                         header_index,
                         insulation_temp_rules,
                     )
-                if rule_temp is not None:
-                    insulation_value_temp = rule_temp
-                    summary["Insulation Temp. by Rule File"] += 1
-                elif uses_line_for_insulation:
-                    insulation_value_temp = line_operating_value
-                    if line_operating_value is not None:
-                        summary["Insulation Temp. by Line List"] += 1
-
-                if insulation_value_temp is None:
-                    summary["Insulation Temp. Issue"] += 1
-                    if not uses_line_for_insulation:
-                        reason = "Insulation Temp 규칙 미일치"
-                    elif line_record is None:
-                        reason = (
-                            "Insulation Temp 규칙 미일치 및 Line No. 매칭 실패"
-                            if insulation_temp_rules
-                            else ""
-                        )
+                    if insulation_value_temp is not None:
+                        summary["Insulation Temp. by Rule File"] += 1
                     else:
-                        reason = (
-                            "Insulation Temp 규칙 미일치 및 Line List 유효한 온도값 없음"
-                            if insulation_temp_rules
-                            else "유효한 온도값 없음"
-                        )
-                    if reason:
                         temperature_issue_ws.append([
                             display_row_no,
                             drawing_number,
-                            line_record["excel_row"] if line_record else "",
-                            line_record["line_number"] if line_record else "",
+                            "",
+                            "",
                             "Insulation 적용 Temp.",
-                            line_operating_original,
-                            reason,
+                            "",
+                            "Insulation Temp 규칙 미일치",
                         ])
+                if insulation_value_temp is None:
+                    summary["Insulation Temp. Issue"] += 1
 
                 row_values[
                     header_index[
@@ -6482,57 +6684,72 @@ class BmDmcsTool:
                     ]
                 ] = insulation_value_temp
 
-                class_value = row_values[
-                    header_index[self.paint_class_col.get()]
-                ]
-                insulation_value = row_values[
-                    header_index[self.paint_insulation_col.get()]
-                ]
-
-                material_group = self._classify_by_rules(
-                    class_value,
-                    self.material_rules,
+                # ② Paint Code → Display Format Paint Symbol 열
+                class_value = (
+                    row_values[class_index] if class_index is not None else None
                 )
-                paint_suffix = self._classify_by_rules(
-                    insulation_value,
-                    self.insulation_rules,
+                insulation_value = (
+                    row_values[insulation_index] if insulation_index is not None else None
                 )
-                paint_type = (
-                    f"{material_group}-{paint_suffix}"
-                    if material_group and paint_suffix
-                    else ""
-                )
-
+                material_group = ""
+                paint_suffix = ""
+                paint_type = ""
                 paint_symbol = ""
                 painting_issue_reasons = []
 
-                if not material_group:
-                    painting_issue_reasons.append(
-                        "Material Group 분류 실패"
+                if paint_from_rule:
+                    paint_symbol, _rule_row = self._value_from_display_rules(
+                        row_values,
+                        header_index,
+                        paint_symbol_rules,
                     )
-                if not paint_suffix:
-                    painting_issue_reasons.append(
-                        "Paint Suffix 분류 실패"
+                    paint_symbol = paint_symbol or ""
+                    if paint_symbol:
+                        summary["Paint Symbol by Rule File"] += 1
+                    else:
+                        painting_issue_reasons.append("Paint 규칙 미일치")
+                else:
+                    material_group = self._classify_by_rules(
+                        class_value,
+                        self.material_rules,
                     )
-                if maximum_value is None:
-                    painting_issue_reasons.append(
-                        "Painting 적용 Temp. 미결정"
+                    paint_suffix = self._classify_by_rules(
+                        insulation_value,
+                        self.insulation_rules,
+                    )
+                    paint_type = (
+                        f"{material_group}-{paint_suffix}"
+                        if material_group and paint_suffix
+                        else ""
                     )
 
-                if (
-                    material_group
-                    and paint_suffix
-                    and maximum_value is not None
-                ):
-                    paint_symbol = self._paint_symbol(
-                        paint_type,
-                        maximum_value,
-                        paint_matrix,
-                    )
-                    if not paint_symbol:
+                    if not material_group:
                         painting_issue_reasons.append(
-                            "Painting Code Table 매핑 실패"
+                            "Material Group 분류 실패"
                         )
+                    if not paint_suffix:
+                        painting_issue_reasons.append(
+                            "Paint Suffix 분류 실패"
+                        )
+                    if maximum_value is None:
+                        painting_issue_reasons.append(
+                            "Painting 적용 Temp. 미결정"
+                        )
+
+                    if (
+                        material_group
+                        and paint_suffix
+                        and maximum_value is not None
+                    ):
+                        paint_symbol = self._paint_symbol(
+                            paint_type,
+                            maximum_value,
+                            paint_matrix,
+                        )
+                        if not paint_symbol:
+                            painting_issue_reasons.append(
+                                "Painting Code Table 매핑 실패"
+                            )
 
                 row_values[
                     header_index["Paint Symbol"]
@@ -6631,7 +6848,19 @@ class BmDmcsTool:
             ])
             summary_ws.append([
                 "Painting Temp. Line List Column",
-                self.paint_max_operating_temp_col.get(),
+                (
+                    self.paint_max_operating_temp_col.get()
+                    if not self._paint_uses_rule_file()
+                    else ""
+                ),
+            ])
+            summary_ws.append([
+                "Paint Symbol Source",
+                self.paint_symbol_source.get(),
+            ])
+            summary_ws.append([
+                "Paint Symbol Rule File",
+                self.paint_rule_file.get() if self._paint_uses_rule_file() else "",
             ])
 
             wb_in.close()
