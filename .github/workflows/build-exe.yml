@@ -1,0 +1,39 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "BM_DMCS_Tool_*.py"
+      - "build_exe.bat"
+      - "app_icon.ico"
+      - "requirements.txt"
+      - ".github/workflows/build-exe.yml"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install packages
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller
+
+      - name: Build EXE
+        run: >
+          python -m PyInstaller --noconfirm --clean --onefile --windowed
+          --name BM_DMCS_Tool_v8_13_Beta
+          --icon app_icon.ico
+          BM_DMCS_Tool_v8_13_Beta.py
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: BM_DMCS_Tool_v8_13_Beta-exe
+          path: dist/BM_DMCS_Tool_v8_13_Beta.exe

@@ -1347,7 +1347,7 @@ class BmDmcsTool:
 
         tk.Label(
             self.developer_box,
-            text="Developed by 김영철",
+            text="Developed by 김영철, 이경섭",
             bg="#163E63",
             fg="#FFFFFF",
             font=("Malgun Gothic", 9, "bold"),
@@ -1356,7 +1356,7 @@ class BmDmcsTool:
 
         tk.Label(
             self.developer_box,
-            text="02-369-5379",
+            text="02-369-5533",
             bg="#163E63",
             fg="#D5E2EE",
             font=("Arial", 8),
@@ -1365,7 +1365,7 @@ class BmDmcsTool:
 
         tk.Label(
             self.developer_box,
-            text="kyc4888@dlenc.co.kr",
+            text="gyeongsub@dlenc.co.kr",
             bg="#163E63",
             fg="#D5E2EE",
             font=("Arial", 8),
@@ -2468,15 +2468,13 @@ class BmDmcsTool:
         """
         Normalize a combined key so that formatting differences do not matter.
 
-        - 대소문자, 앞뒤/연속 공백, 구분자 주변 공백 무시
-        - 숫자 앞의 0 무시 (04-4300 == 4-4300)
+        - 대소문자, 앞뒤/연속 공백, 구분자 주변 공백만 무시 (숫자 앞의 0은 그대로 비교)
         """
         text = clean_text(text).upper()
         if not text:
             return ""
         separator = re.escape(self._mapping_separator())
-        text = re.sub(rf"\s*{separator}\s*", self._mapping_separator(), text)
-        return re.sub(r"(?<![\d.])0+(?=\d)", "", text)
+        return re.sub(rf"\s*{separator}\s*", self._mapping_separator(), text)
 
     @staticmethod
     def _resolve_header(name, headers):
@@ -2690,8 +2688,8 @@ class BmDmcsTool:
                 "1행(헤더): A열 = 3D BM 열 조합, B열 = PCWBS 열 조합 (열 이름을 조합 구분자로 연결, 2개 이상 가능)\n"
                 "  예) SUBTITLE-CIA  /  Category5-Category4  /  SUBTITLE-CIA-SERIAL\n"
                 "2행부터: A열 = 3D BM 조합 값, B열 = 그 값에 해당하는 PCWBS 조합 값\n"
-                "대소문자·공백·숫자 앞 0은 무시합니다 (04-4300 = 4-4300). "
-                "같은 A값을 여러 행에 쓰면 여러 PCWBS 값에 연결됩니다."
+                "값은 각 파일에 실제로 들어 있는 모양 그대로 입력하세요 (04와 4는 다른 값). "
+                "대소문자·앞뒤 공백만 무시하며, 같은 A값을 여러 행에 쓰면 여러 PCWBS 값에 연결됩니다."
             ),
             headers=headers,
             rows=rows,
@@ -4683,7 +4681,7 @@ class BmDmcsTool:
         # ---- ① Line List Insulation Temp → Display Format 'Insulation Temp' 열
         insulation_temp_frame = tk.LabelFrame(
             map_frame,
-            text="① Line List Insulation Temp → Display Format Insulation Temp 열",
+            text="1. Line List Insulation Temp → Display Format Insulation Temp 열",
             padx=6,
             pady=4,
         )
@@ -4748,7 +4746,7 @@ class BmDmcsTool:
         # ---- ② Paint Code → Display Format 'Paint Symbol' 열
         paint_code_frame = tk.LabelFrame(
             map_frame,
-            text="② Paint Code → Display Format Paint Symbol 열",
+            text="2.1 Paint Code → Display Format Paint Symbol 열",
             padx=6,
             pady=4,
         )
@@ -4854,13 +4852,14 @@ class BmDmcsTool:
 
         rule_body = tk.Frame(self.paint_tab)
         rule_body.pack(fill="both", expand=True, padx=10, pady=4)
+        self.paint_rule_body = rule_body
         rule_body.grid_rowconfigure(0, weight=1)
         rule_body.grid_columnconfigure(0, weight=1)
         rule_body.grid_columnconfigure(1, weight=1)
 
         material_frame = tk.LabelFrame(
             rule_body,
-            text="② Paint Code · Class → Material Group 규칙",
+            text="2.2 Paint Code · Class → Material Group 규칙",
             padx=6,
             pady=6,
         )
@@ -4914,7 +4913,7 @@ class BmDmcsTool:
 
         insulation_frame = tk.LabelFrame(
             rule_body,
-            text="② Paint Code · Insulation Symbol → Paint Suffix 규칙",
+            text="2.3 Paint Code · Insulation Symbol → Paint Suffix 규칙",
             padx=6,
             pady=6,
         )
@@ -4975,6 +4974,7 @@ class BmDmcsTool:
 
         button_frame = tk.Frame(self.paint_tab)
         button_frame.pack(fill="x", padx=10, pady=(5, 10))
+        self.paint_button_frame = button_frame
 
         self.paint_save_rules_button = tk.Button(
             button_frame,
@@ -5206,18 +5206,25 @@ class BmDmcsTool:
         use_rule = self._paint_uses_rule_file()
         self._show_grid_rows(self.paint_code_frame, [1, 2, 3], not use_rule)
         self._show_grid_rows(self.paint_code_frame, self.paint_rule_widgets["rows"], use_rule)
-        for frame in [getattr(self, "paint_material_frame", None), getattr(self, "paint_suffix_frame", None)]:
-            if frame is not None:
-                self._set_widgets_state(frame, not use_rule)
+        # 2.2 / 2.3 규칙은 Painting Code Table 계산 방식에서만 사용 → 규칙 파일 방식이면 숨김
+        rule_body = getattr(self, "paint_rule_body", None)
+        if rule_body is not None:
+            if use_rule:
+                rule_body.pack_forget()
+            elif not rule_body.winfo_manager():
+                rule_body.pack(
+                    fill="both", expand=True, padx=10, pady=4,
+                    before=self.paint_button_frame,
+                )
         if use_rule:
             self.paint_code_help.set(
                 "규칙 파일의 조건을 위에서부터 검사해 처음 일치한 규칙의 Paint Symbol을 입력합니다 "
-                "(VLOOKUP처럼 먼저 나온 조건 우선). 아래 Material Group / Paint Suffix 규칙은 사용하지 않습니다."
+                "(VLOOKUP처럼 먼저 나온 조건 우선). 이 방식에서는 2.2 / 2.3 규칙을 사용하지 않습니다."
             )
         else:
             self.paint_code_help.set(
                 "Paint Symbol은 Insulation과 Temp를 바탕으로 계산합니다: "
-                "Class → Material Group, Insulation Symbol → Paint Suffix로 Paint Type(예: CS-H)을 정하고, "
+                "Class → Material Group(2.2), Insulation Symbol → Paint Suffix(2.3)로 Paint Type(예: CS-H)을 정하고, "
                 "Painting 적용 Temp. 구간에 맞는 값을 Painting Code Table에서 찾습니다."
             )
 
