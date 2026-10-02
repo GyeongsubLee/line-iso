@@ -1013,6 +1013,7 @@ class BmDmcsTool:
         self.pcwbs_map_file = tk.StringVar(value="")
         self.pcwbs_map_sheet = tk.StringVar(value="")
         self.pcwbs_map_header_row = tk.StringVar(value="1")
+        self.pcwbs_map_separator = tk.StringVar(value="-")
         self.pcwbs_map_info = tk.StringVar(
             value="Mapping Table을 불러오면 1행 헤더(3D BM 열 / PCWBS 열)와 등록 건수가 표시됩니다."
         )
@@ -1057,9 +1058,18 @@ class BmDmcsTool:
         tk.Button(
             self.pcwbs_mapping_frame, text="Mapping Table 불러오기", command=self.preview_pcwbs_mapping_table, width=18
         ).grid(row=1, column=5, padx=4)
+        separator_frame = tk.Frame(self.pcwbs_mapping_frame)
+        separator_frame.grid(row=2, column=0, columnspan=6, sticky="w", pady=(3, 0))
+        tk.Label(separator_frame, text="조합 구분자").pack(side="left")
+        tk.Entry(separator_frame, textvariable=self.pcwbs_map_separator, width=4).pack(side="left", padx=4)
+        tk.Label(
+            separator_frame,
+            text="헤더 예: A1 = SUBTITLE-CIA, B1 = Category5-Category4 (열 2개 이상 조합 가능)",
+            fg="#555555",
+        ).pack(side="left", padx=6)
         tk.Label(
             self.pcwbs_mapping_frame, textvariable=self.pcwbs_map_info, fg="#1f4e79", anchor="w"
-        ).grid(row=2, column=0, columnspan=6, sticky="w", pady=(3, 0))
+        ).grid(row=3, column=0, columnspan=6, sticky="w", pady=(3, 0))
 
         key_frame = tk.LabelFrame(self.pcwbs_tab, text="비교키 생성 설정", padx=8, pady=6)
         key_frame.pack(fill="x", padx=10, pady=5)
@@ -2445,6 +2455,23 @@ class BmDmcsTool:
     def _normalize_mapping_value(self, value):
         return self._normalize_component(value, "원문", "0")
 
+    def _mapping_separator(self):
+        return self.pcwbs_map_separator.get() or "-"
+
+    def _loose_key(self, text):
+        """
+        Normalize a combined key so that formatting differences do not matter.
+
+        - 대소문자, 앞뒤/연속 공백, 구분자 주변 공백 무시
+        - 숫자 앞의 0 무시 (04-4300 == 4-4300)
+        """
+        text = clean_text(text).upper()
+        if not text:
+            return ""
+        separator = re.escape(self._mapping_separator())
+        text = re.sub(rf"\s*{separator}\s*", self._mapping_separator(), text)
+        return re.sub(r"(?<![\d.])0+(?=\d)", "", text)
+
     @staticmethod
     def _resolve_header(name, headers):
         """Find the real header name for a (loosely written) column name."""
@@ -2453,14 +2480,54 @@ class BmDmcsTool:
         lookup = {canonical_header(header): header for header in headers}
         return lookup.get(canonical_header(name))
 
+    def _parse_combo_header(self, header_text, headers):
+        """
+        Split a Mapping Table header such as 'SUBTITLE-CIA' into real column names.
+
+        열 이름 자체에 구분자가 들어 있어도(예: SIZE-1) 실제 열 목록과 비교해서 나눕니다.
+        Returns a list of column names, or None if it cannot be resolved.
+        """
+        text = clean_text(header_text)
+        if not text:
+            return None
+        separator = self._mapping_separator()
+        tokens = [token.strip() for token in text.split(separator)]
+
+        def resolve_from(start):
+            if start == len(tokens):
+                return []
+            # 긴 열 이름(구분자를 포함한 이름)을 우선 시도
+            for end in range(len(tokens), start, -1):
+                found = self._resolve_header(separator.join(tokens[start:end]), headers)
+                if found:
+                    rest = resolve_from(end)
+                    if rest is not None:
+                        return [found] + rest
+            return None
+
+        return resolve_from(0)
+
+    def _combo_key(self, row, columns):
+        """Join the row values of the given columns with the mapping separator."""
+        parts = []
+        blanks = []
+        for column in columns:
+            value = self._normalize_mapping_value(row.get(column))
+            if not value:
+                blanks.append(column)
+            parts.append(value)
+        if blanks:
+            return "", f"{', '.join(blanks)} 값이 비어 있음"
+        return self._loose_key(self._mapping_separator().join(parts)), ""
+
     def _load_key_mapping_table(self):
         """
         Read the Mapping Table.
 
         Format (header row = '헤더 행'):
-            A열 헤더: 3D BM 열 이름 (예: SUBTITLE)
-            B열 헤더: PCWBS 열 이름 (예: Category4)
-            이후 행: A = 3D BM 값, B = 해당하는 PCWBS 값
+            A열 헤더: 3D BM 열 조합 (예: SUBTITLE-CIA)
+            B열 헤더: PCWBS 열 조합 (예: Category5-Category4)
+            이후 행: A = 3D BM 조합 값 (04-4300), B = PCWBS 조합 값 (04-Common (4300))
         """
         path = Path(self.pcwbs_map_file.get().strip())
         if not path.is_file():
@@ -2480,19 +2547,24 @@ class BmDmcsTool:
             ws = wb[sheet_name]
             rows = ws.iter_rows(min_row=header_row, values_only=True)
             header = list(next(rows, ()))
-            bm_column = clean_text(header[0]) if len(header) > 0 else ""
-            pcwbs_column = clean_text(header[1]) if len(header) > 1 else ""
-            if not bm_column or not pcwbs_column:
+            bm_header = clean_text(header[0]) if len(header) > 0 else ""
+            pcwbs_header = clean_text(header[1]) if len(header) > 1 else ""
+            if not bm_header or not pcwbs_header:
                 raise ValueError(
-                    "Mapping Table 헤더 행의 A열에 3D BM 열 이름, B열에 PCWBS 열 이름을 입력하세요."
+                    "Mapping Table 헤더 행의 A열에 3D BM 열 조합(예: SUBTITLE-CIA), "
+                    "B열에 PCWBS 열 조합(예: Category5-Category4)을 입력하세요."
                 )
 
             mapping = {}
             issues = []
             pair_count = 0
             for excel_row, values in enumerate(rows, start=header_row + 1):
-                bm_value = self._normalize_mapping_value(values[0] if len(values) > 0 else None)
-                pcwbs_value = self._normalize_mapping_value(values[1] if len(values) > 1 else None)
+                bm_value = self._loose_key(
+                    self._normalize_mapping_value(values[0] if len(values) > 0 else None)
+                )
+                pcwbs_value = self._loose_key(
+                    self._normalize_mapping_value(values[1] if len(values) > 1 else None)
+                )
                 if not bm_value and not pcwbs_value:
                     continue
                 if not bm_value or not pcwbs_value:
@@ -2511,58 +2583,68 @@ class BmDmcsTool:
             wb.close()
 
         return {
-            "bm_column": bm_column,
-            "pcwbs_column": pcwbs_column,
+            "bm_header": bm_header,
+            "pcwbs_header": pcwbs_header,
             "map": mapping,
             "pair_count": pair_count,
             "issues": issues,
         }
 
     def _prepare_key_mapping(self, bm_headers, ref_headers, bm_label="3D BM"):
-        """Load the Mapping Table and resolve its column names against both files."""
+        """Load the Mapping Table and resolve its header combinations against both files."""
         table = self._load_key_mapping_table()
-        bm_column = self._resolve_header(table["bm_column"], bm_headers)
-        pcwbs_column = self._resolve_header(table["pcwbs_column"], ref_headers)
-        if not bm_column:
+        separator = self._mapping_separator()
+        bm_columns = self._parse_combo_header(table["bm_header"], bm_headers)
+        pcwbs_columns = self._parse_combo_header(table["pcwbs_header"], ref_headers)
+        if not bm_columns:
             raise ValueError(
-                f"Mapping Table A열 헤더 '{table['bm_column']}' 열이 {bm_label} 파일에 없습니다.\n"
-                "3D BM 열 불러오기를 먼저 실행했는지, 열 이름이 맞는지 확인하세요."
+                f"Mapping Table A열 헤더 '{table['bm_header']}'를 {bm_label} 열로 나눌 수 없습니다.\n"
+                f"열 이름을 조합 구분자 '{separator}'로 연결했는지, "
+                "3D BM 열 불러오기를 먼저 실행했는지 확인하세요."
             )
-        if not pcwbs_column:
+        if not pcwbs_columns:
             raise ValueError(
-                f"Mapping Table B열 헤더 '{table['pcwbs_column']}' 열이 PCWBS 기준 파일에 없습니다.\n"
-                "PCWBS 열 불러오기를 먼저 실행했는지, 열 이름이 맞는지 확인하세요."
+                f"Mapping Table B열 헤더 '{table['pcwbs_header']}'를 PCWBS 열로 나눌 수 없습니다.\n"
+                f"열 이름을 조합 구분자 '{separator}'로 연결했는지, "
+                "PCWBS 열 불러오기를 먼저 실행했는지 확인하세요."
             )
-        table["bm_column"] = bm_column
-        table["pcwbs_column"] = pcwbs_column
+        table["bm_columns"] = bm_columns
+        table["pcwbs_columns"] = pcwbs_columns
+        table["bm_label"] = " + ".join(bm_columns)
+        table["pcwbs_label"] = " + ".join(pcwbs_columns)
         self._active_key_mapping = table
         return table
 
     def _pcwbs_row_key(self, row, settings):
         """PCWBS key for one row, using the selected comparison method."""
         if self._use_mapping_table():
-            column = self._active_key_mapping["pcwbs_column"]
-            key = self._normalize_mapping_value(row.get(column))
-            return key, ("" if key else f"{column} 값이 비어 있음")
+            return self._combo_key(row, self._active_key_mapping["pcwbs_columns"])
         return self._build_custom_key(row, settings)
 
     def _bm_row_mapped_keys(self, row):
         """PCWBS keys that one 3D BM row points to through the Mapping Table."""
         table = self._active_key_mapping
-        value = self._normalize_mapping_value(row.get(table["bm_column"]))
+        value, error = self._combo_key(row, table["bm_columns"])
         if not value:
-            return [], value, f"{table['bm_column']} 값이 비어 있음"
+            return [], value, error
         keys = table["map"].get(value, [])
         if not keys:
-            return [], value, f"Mapping Table에 없는 3D BM 값: {value}"
+            return [], value, f"Mapping Table에 없는 3D BM 조합 값: {value}"
         return list(keys), value, ""
 
     def preview_pcwbs_mapping_table(self):
         try:
             table = self._load_key_mapping_table()
+            bm_text = table["bm_header"]
+            pcwbs_text = table["pcwbs_header"]
+            # 열 목록이 이미 불러와져 있으면 조합이 실제 열로 나뉘는지도 확인
+            if self.pcwbs_bm_headers and self.pcwbs_ref_headers:
+                resolved = self._prepare_key_mapping(self.pcwbs_bm_headers, self.pcwbs_ref_headers)
+                bm_text = resolved["bm_label"]
+                pcwbs_text = resolved["pcwbs_label"]
             self.pcwbs_map_info.set(
-                f"3D BM 열 '{table['bm_column']}' → PCWBS 열 '{table['pcwbs_column']}' / "
-                f"3D BM 값 {len(table['map']):,}개, 매핑 {table['pair_count']:,}건"
+                f"3D BM [{bm_text}] → PCWBS [{pcwbs_text}] / "
+                f"3D BM 조합 값 {len(table['map']):,}개, 매핑 {table['pair_count']:,}건"
                 + (f" / 제외 {len(table['issues']):,}건" if table["issues"] else "")
             )
             self.log(f"Mapping Table 불러오기: {table['pair_count']:,}건")
@@ -2570,22 +2652,25 @@ class BmDmcsTool:
             messagebox.showerror("오류", str(exc))
 
     def show_pcwbs_mapping_example(self):
-        headers = ["SUBTITLE", "Category4"]
+        headers = ["SUBTITLE-CIA", "Category5-Category4"]
         rows = [
-            ["4", "PIPE RACK (4300)"],
-            ["5", "PIPE RACK (4300)"],
-            ["12", "UTILITY AREA (5100)"],
-            ["AREA-21", "TANK FARM (6200)"],
+            ["04-4300", "04-Common (4300)"],
+            ["79-4300", "79-Common (4300)"],
+            ["04-4310", "04-PE(Swing) (4310)"],
+            ["12-5100", "12-Utility Area (5100)"],
         ]
         self._show_table_example(
             title="Mapping Table 입력 예시",
             subtitle=(
-                "비교키를 조합할 수 없을 때, 3D BM 값과 PCWBS 값을 1:1(또는 1:N)로 직접 연결하는 표입니다."
+                "3D BM 열 조합 값과 PCWBS 열 조합 값을 직접 연결하는 표입니다. "
+                "열 값이 1:1로 대응되지 않을 때 사용합니다."
             ),
             note=(
-                "1행(헤더): A열 = 3D BM 열 이름, B열 = PCWBS 열 이름  (각 파일의 실제 열 이름과 같아야 함)\n"
-                "2행부터: A열 = 3D BM 값, B열 = 그 값에 해당하는 PCWBS 값\n"
-                "같은 3D BM 값을 여러 행에 쓰면 여러 PCWBS 값에 연결됩니다. 대소문자·앞뒤 공백은 무시합니다."
+                "1행(헤더): A열 = 3D BM 열 조합, B열 = PCWBS 열 조합 (열 이름을 조합 구분자로 연결, 2개 이상 가능)\n"
+                "  예) SUBTITLE-CIA  /  Category5-Category4  /  SUBTITLE-CIA-SERIAL\n"
+                "2행부터: A열 = 3D BM 조합 값, B열 = 그 값에 해당하는 PCWBS 조합 값\n"
+                "대소문자·공백·숫자 앞 0은 무시합니다 (04-4300 = 4-4300). "
+                "같은 A값을 여러 행에 쓰면 여러 PCWBS 값에 연결됩니다."
             ),
             headers=headers,
             rows=rows,
@@ -2970,7 +3055,7 @@ class BmDmcsTool:
             mode = self.pcwbs_bm_key_mode.get()
             use_table = self._use_mapping_table()
             if use_table:
-                needed.add(self._active_key_mapping["bm_column"])
+                needed.update(self._active_key_mapping["bm_columns"])
             elif mode in ["열 조합", "두 방식 교차검증"]:
                 needed.update(
                     column
@@ -3152,8 +3237,8 @@ class BmDmcsTool:
         if use_table:
             issue_rows = self._active_key_mapping["issues"] + issue_rows
             mode = (
-                f"Mapping Table ({self._active_key_mapping['bm_column']} → "
-                f"{self._active_key_mapping['pcwbs_column']})"
+                f"Mapping Table ({self._active_key_mapping['bm_label']} → "
+                f"{self._active_key_mapping['pcwbs_label']})"
             )
             key_components = f"Mapping Table: {self.pcwbs_map_file.get()}"
         else:
